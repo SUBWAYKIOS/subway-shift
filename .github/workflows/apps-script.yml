@@ -1,0 +1,50 @@
+# (TUỲ CHỌN) Tự dán Code.gs + Index.html vào Apps Script của CẢ HAI quán và cập nhật bản triển khai
+# mỗi khi đẩy thay đổi trong apps-script/ hoặc src/. Chưa cài secret thì bước này tự bỏ qua, không lỗi.
+# Cách cài: xem README → "Tự cập nhật Code.gs cho các quán".
+name: Update Apps Script
+on:
+  push:
+    branches: [main]
+    paths: ["apps-script/**", "src/Index.html"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        store: [FOR, CTR]
+    env:
+      CLASPRC: ${{ secrets.CLASPRC_JSON }}
+      SCRIPT_ID: ${{ secrets[format('SCRIPT_ID_{0}', matrix.store)] }}
+      DEPLOY_ID: ${{ secrets[format('DEPLOY_ID_{0}', matrix.store)] }}
+    steps:
+      - name: Kiểm tra secret
+        id: chk
+        run: |
+          if [ -z "$CLASPRC" ] || [ -z "$SCRIPT_ID" ] || [ -z "$DEPLOY_ID" ]; then
+            echo "Chưa cài secret cho ${{ matrix.store }} — bỏ qua."; echo "skip=1" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.chk.outputs.skip != '1'
+      - uses: actions/setup-node@v4
+        if: steps.chk.outputs.skip != '1'
+        with:
+          node-version: 20
+      - name: Dán code vào Apps Script và cập nhật bản triển khai
+        if: steps.chk.outputs.skip != '1'
+        run: |
+          npm i -g @google/clasp@2.4.2 >/dev/null
+          printf '%s' "$CLASPRC" > ~/.clasprc.json
+          mkdir -p work && cd work
+          printf '{"scriptId":"%s","rootDir":"."}' "$SCRIPT_ID" > .clasp.json
+          clasp pull                      # lấy appsscript.json + file hiện có (không làm mất file nào)
+          # clasp lưu file máy chủ dạng .js (Code.js) hoặc .gs tuỳ máy — ghi đè đúng file đang có
+          if [ -f Code.js ]; then cp ../apps-script/Code.gs Code.js; else cp ../apps-script/Code.gs Code.gs; fi
+          cp ../src/Index.html Index.html
+          ls -la
+          clasp push --force
+          VER=$(grep -o "APP_VERSION = '[^']*'" ../apps-script/Code.gs | head -1 | cut -d"'" -f2)
+          clasp deploy -i "$DEPLOY_ID" -d "GitHub ${VER} (${GITHUB_SHA::7})"

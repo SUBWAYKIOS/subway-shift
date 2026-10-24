@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SUBWAY シフト</title>
+<meta name="theme-color" content="#145C39">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-32.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<script src="config.js?v=%%BUILD%%"></script>
+<style>
+  :root{--green:#145C39;--green-dk:#0C3B25;--ink:#231F18;--muted:#6E6757;--line:#E6E1D3;--card:#fff;--bg:#F5F3EE;}
+  @media (prefers-color-scheme: dark){ :root{--ink:#F1EFE9;--muted:#A8A294;--line:#3A372F;--card:#1E1D1A;--bg:#121210;} }
+  *{box-sizing:border-box;} html,body{margin:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;}
+  .box{width:100%;max-width:420px;text-align:center;}
+  .logo{width:72px;height:72px;border-radius:18px;margin:0 auto 14px;display:block;}
+  h1{font-size:20px;margin:0 0 4px;} p{color:var(--muted);font-size:13px;margin:0 0 20px;}
+  .st{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 10px;color:inherit;text-decoration:none;font-size:15px;font-weight:700;}
+  .st:hover{border-color:var(--green);} .st.is-last{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset;}
+  .st b{display:inline-flex;align-items:center;justify-content:center;min-width:46px;height:30px;border-radius:8px;background:var(--green);color:#fff;font-size:12px;letter-spacing:.06em;}
+  .st span{flex:1;} .st i{font-style:normal;color:var(--muted);font-size:18px;}
+  .err{color:#C1443D;font-size:13px;}
+</style>
+</head>
+<body>
+<div class="box">
+  <img class="logo" src="icons/icon-192.png" alt="">
+  <h1>SUBWAY シフト</h1>
+  <p>店舗を選んでください · Chọn quán · Choose your store</p>
+  <div id="list"></div>
+</div>
+<script>
+(function(){
+  var S = window.SBW_STORES || [], q = new URLSearchParams(location.search), last = "";
+  try { last = localStorage.getItem("sbw.lastStore") || ""; } catch (e){}
+  function go(code){ var u = new URLSearchParams(location.search); u.delete("pick"); u.set("s", code); location.replace("app.html?" + u.toString() + location.hash); }
+  // Link cũ / chỉ một quán / đã chọn lần trước → vào thẳng (thêm ?pick=1 để luôn hiện danh sách).
+  if (q.get("s")) return go(q.get("s"));
+  if (!q.get("pick")){
+    if (S.length === 1) return go(S[0].code);
+    for (var i = 0; i < S.length; i++) if (String(S[i].code).toUpperCase() === last) return go(S[i].code);
+  }
+  var el = document.getElementById("list");
+  if (!S.length){ el.innerHTML = '<div class="err">config.js chưa có quán nào.</div>'; return; }
+  el.innerHTML = S.map(function(s){
+    var c = String(s.code).toUpperCase();
+    var bad = !/^https:\/\/script\.google\.com\//.test(String(s.url || "")) || /DÁN_LINK|PASTE_/.test(String(s.url));
+    return '<a class="st' + (c === last ? ' is-last' : '') + '" href="app.html?s=' + encodeURIComponent(c) + '"><b>' + c.replace(/[<>&"]/g, '') + '</b><span>' +
+      String(s.name || c).replace(/[<>&"]/g, '') + (bad ? '<br><small class="err">config.js: chưa điền link /exec</small>' : '') + '</span><i>›</i></a>';
+  }).join("");
+})();
+</script>
+</body>
+</html>
