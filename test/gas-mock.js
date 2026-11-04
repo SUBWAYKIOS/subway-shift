@@ -71,9 +71,10 @@ module.exports = function makeApi(opt){
   const registry = opt.registry || REG;
   const mainId = opt.ssId || ('ss_' + crypto.randomBytes(6).toString('hex'));
   registry[mainId] = registry[mainId] || new Spreadsheet(mainId, 'SUBWAY');
-  const props = {}, cache = new Map(), mails = [], triggers = [];
+  const props = {}, cache = new Map(), mails = [], triggers = [], pushes = [];
   const htmlPath = opt.html;
 
+  const outer = {};
   const ctx = {
     console, Math, Date, JSON, Object, Array, String, Number, Boolean, RegExp, Error, isFinite, isNaN, parseInt, parseFloat, encodeURIComponent, decodeURIComponent,
     SpreadsheetApp: {
@@ -110,7 +111,8 @@ module.exports = function makeApi(opt){
       base64Decode: s => toSigned(Buffer.from(String(s), 'base64')),
       base64EncodeWebSafe: v => toBuf(v).toString('base64').replace(/\+/g, '-').replace(/\//g, '_'),
       base64DecodeWebSafe: s => toSigned(Buffer.from(String(s).replace(/-/g, '+').replace(/_/g, '/'), 'base64')),
-      newBlob: (data, type, name) => { const b = toBuf(data); return { getBytes: () => toSigned(b), getDataAsString: () => b.toString('utf8'), getContentType: () => type || '', getName: () => name || '', setName(n){ name = n; return this; }, setContentType(t){ type = t; return this; } }; },
+      newBlob: (data, type, name) => { const b = toBuf(data); return { getBytes: () => toSigned(b), getDataAsString: () => b.toString('utf8'), getContentType: () => type || '', getName: () => name || '', setName(n){ name = n; return this; }, setContentType(t){ type = t; return this; },
+        getAs(t){ const nb = outer.Utilities.newBlob(Buffer.concat([Buffer.from('%PDF-MOCK\n'), b]), t, String(name || '').replace(/\.[a-z]+$/i, '') + '.pdf'); return nb; } }; },
       formatDate: (d, tz, fmt) => {
         const j = new Date(new Date(d).getTime() + 9 * 3600000), p = n => String(n).padStart(2, '0');
         return String(fmt).replace('yyyy', j.getUTCFullYear()).replace('MM', p(j.getUTCMonth() + 1)).replace('dd', p(j.getUTCDate()))
@@ -119,11 +121,11 @@ module.exports = function makeApi(opt){
       sleep: () => {}, unzip: () => []
     },
     MailApp: { sendEmail: function(){ mails.push(Array.from(arguments)); }, getRemainingDailyQuota: () => 100 },
-    ScriptApp: {
+    ScriptApp: { getScriptId: () => "1MockScriptIdForTests_abcdefghijklmnopqrstuvwxyz",
       getService: () => ({ getUrl: () => opt.url || 'http://127.0.0.1/exec' }),
       getOAuthToken: () => 'test-token',
       getProjectTriggers: () => triggers.slice(),
-      newTrigger: fn => { const t = { fn, getHandlerFunction: () => fn, getUniqueId: () => fn }; const b = { timeBased: () => b, everyMinutes: () => b, everyHours: () => b, atHour: () => b, everyDays: () => b, create: () => { triggers.push(t); return t; } }; return b; },
+      newTrigger: fn => { const t = { fn, getHandlerFunction: () => fn, getUniqueId: () => fn }; const b = { timeBased: () => b, everyMinutes: () => b, everyHours: () => b, atHour: () => b, everyDays: () => b, inTimezone: () => b, create: () => { triggers.push(t); return t; } }; return b; },
       deleteTrigger: t => { const i = triggers.indexOf(t); if (i !== -1) triggers.splice(i, 1); }
     },
     Session: { getEffectiveUser: () => ({ getEmail: () => 'owner@example.com' }), getActiveUser: () => ({ getEmail: () => 'owner@example.com' }), getScriptTimeZone: () => 'Asia/Tokyo' },
@@ -133,12 +135,45 @@ module.exports = function makeApi(opt){
       createHtmlOutput: h => out(h)
     },
     ContentService: { MimeType: { JSON: 'json', TEXT: 'text', JAVASCRIPT: 'js' }, createTextOutput: s => ({ s, setMimeType(){ return this; }, getContent(){ return this.s; } }) },
-    DriveApp: {
-      getFilesByName: () => iter([]), getFoldersByName: () => iter([]), searchFiles: () => iter([]),
-      getFileById: id => ({ getId: () => id, addEditor: () => {}, isTrashed: () => false, getDateCreated: () => new Date() }),
-      createFolder: n => folder(n), getRootFolder: () => folder('root'), getFolderById: id => folder(id)
-    },
-    UrlFetchApp: { fetch: (url, params) => {
+    DriveApp: (function () {
+      // Drive trong bộ nhớ (v47): thư mục / file thật sự lưu bytes để kiểm khoá sổ chấm công.
+      const D = { folders: {}, files: {}, seq: 0 };
+      function mkFolder(name, parent){
+        const id = 'fd' + (++D.seq), f = { id, name, parent, trashed: false,
+          getId: () => id, getName: () => name, getUrl: () => 'https://drive.google.com/drive/folders/' + id, isTrashed: () => f.trashed, setTrashed(v){ f.trashed = !!v; },
+          getFoldersByName: n => iter(Object.values(D.folders).filter(x => x.parent === id && x.name === n && !x.trashed)),
+          createFolder: n => mkFolder(n, id),
+          createFile: (b, c, t) => mkFile(b && b.getBytes ? b : outer.Utilities.newBlob(c != null ? c : '', t, b), id),
+          getFiles: () => iter(Object.values(D.files).filter(x => x.parent === id && !x.trashed)),
+          getFilesByName: n => iter(Object.values(D.files).filter(x => x.parent === id && x.name === n && !x.trashed)),
+          setSharing(){ return this; } };
+        D.folders[id] = f; return f;
+      }
+      function mkFile(blob, parent){
+        const id = 'fi' + (++D.seq), bytes = blob.getBytes(), name = blob.getName(), type = blob.getContentType();
+        const f = { id, name, parent, bytes, desc: '', trashed: false, created: new Date(),
+          getId: () => id, getName: () => f.name, setName(n){ f.name = n; return f; }, getUrl: () => 'https://drive.google.com/file/d/' + id,
+          setDescription(d){ f.desc = d; return f; }, getDescription: () => f.desc, getBlob: () => outer.Utilities.newBlob(f.bytes, type, f.name),
+          setTrashed(v){ f.trashed = !!v; }, isTrashed: () => f.trashed, getDateCreated: () => f.created, getParents: () => iter([D.folders[f.parent]].filter(Boolean)),
+          moveTo(fd){ f.parent = fd.getId(); return f; }, addEditor: () => {}, setSharing(){ return f; } };
+        D.files[id] = f; return f;
+      }
+      const root = mkFolder('root', null);
+      return {
+        __D: D,
+        getFilesByName: n => iter(Object.values(D.files).filter(x => x.name === n && !x.trashed)),
+        getFoldersByName: n => iter(Object.values(D.folders).filter(x => x.name === n && x.parent === root.id && !x.trashed)),
+        searchFiles: () => iter([]),
+        getFileById: id => { if (D.files[id]) return D.files[id]; return { getId: () => id, addEditor: () => {}, isTrashed: () => false, getDateCreated: () => new Date(), getBlob: () => { throw new Error('no file'); } }; },
+        createFolder: n => mkFolder(n, root.id), getRootFolder: () => root,
+        getFolderById: id => { if (D.folders[id]) return D.folders[id]; throw new Error('no folder ' + id); }
+      };
+    })(),
+    UrlFetchApp: { fetchAll: reqs => reqs.map(rq => {
+        // Web Push giả lập: opt.push(rq) → mã trả lời (mặc định 201). Ghi lại mọi yêu cầu vào __pushes.
+        pushes.push(rq); const c0 = opt.push ? opt.push(rq) : 201, c = typeof c0 === 'object' ? c0.c : c0, tx = typeof c0 === 'object' ? (c0.t || '') : '';
+        return { getResponseCode: () => c, getContentText: () => tx };
+      }), fetch: (url, params) => {
       // Hai "quán" giả lập gọi doPost của nhau qua opt.web (url → ctx). Không có → coi như mạng lỗi.
       const tgt = opt.web && opt.web[url];
       if (!tgt) throw new Error('UrlFetchApp: không tới được ' + url);
@@ -153,9 +188,10 @@ module.exports = function makeApi(opt){
     return { _h: h, getContent(){ if (this._h == null) this._h = htmlPath ? fs.readFileSync(htmlPath, 'utf8') : ''; return this._h; },
       setTitle(){ return this; }, addMetaTag(){ return this; }, setXFrameOptionsMode(){ return this; }, setFaviconUrl(){ return this; }, setSandboxMode(){ return this; }, append(x){ this._h = this.getContent() + x; return this; } };
   }
+  outer.Utilities = ctx.Utilities;
   vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(opt.code, 'utf8'), ctx, { filename: 'Code.gs' });
   if (opt.web && opt.url) opt.web[opt.url] = ctx;
-  ctx.__mails = mails; ctx.__props = props; ctx.__cache = cache; ctx.__triggers = triggers; ctx.__ss = registry[mainId];
+  ctx.__pushes = pushes; ctx.__mails = mails; ctx.__props = props; ctx.__cache = cache; ctx.__triggers = triggers; ctx.__ss = registry[mainId];
   return ctx;
 };

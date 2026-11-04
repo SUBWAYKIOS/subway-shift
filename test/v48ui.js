@@ -1,0 +1,143 @@
+// v2026.10.28.2 — giao diện: checklist theo giờ (quản lý + nhân viên + in) · việc tuần / tháng trên bản in + bảng riêng · chia trang A4. Chạy: node tests/v48ui.js
+const fs = require('fs'), path = require('path'), http = require('http');
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const DIR = __dirname, HTML = path.resolve(process.argv[2] || path.join(DIR, '../Index.html')), CODE = path.resolve(process.argv[3] || path.join(DIR, '../Code.gs'));
+const api = require('./gas-mock')({ code: CODE, html: HTML });
+const PORT = 9078, html = fs.readFileSync(HTML, 'utf8');
+const server = http.createServer((q, r) => { r.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); r.end(html); });
+let pass = 0, fail = 0;
+const ok = (l, c, x) => { if (c){ pass++; console.log('  ✅ ' + l); } else { fail++; console.log('  ❌ ' + l + (x !== undefined ? '  → ' + String(x).slice(0, 300) : '')); } };
+const W = (p, ms) => p.waitForTimeout(ms), SH = n => path.join(DIR, 'sh', 'v48-' + n + '.png');
+(async () => {
+  await new Promise(r => server.listen(PORT, r));
+  let tok = api.loginManager('subway1111').token; tok = api.changeManagerPassword(tok, 'subway1111', 'Otagawa2026x').token;
+  api.saveEmployees(tok, JSON.stringify([{ id: 'e1aaaa', name: 'ヒエウ' }, { id: 'e2bbbb', name: 'ラム' }, { id: 'e3cccc', name: 'まい' }]));
+  const TODAY = api.jstDateStr_(0), YM = TODAY.slice(0, 7), D = Number(TODAY.slice(8)), N = new Date(+YM.slice(0, 4), +YM.slice(5, 7), 0).getDate();
+  for (let d = 1; d <= N; d++) ['e1aaaa', 'e2bbbb', 'e3cccc'].forEach((id, i) => { if ((d + i) % 3 !== 0 || d === D) api.saveShiftEntry(tok, YM, d, id, { off: false, shifts: [{ start: 8 + i * 3, end: 14 + i * 3 }] }); });
+  const cc = api.issueClaimCode(tok, 'e2bbbb'); const st = api.claimEmployee('e2bbbb', '284619', true, 'iPhone', cc.code);
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  async function open(w, h, dk){
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, timezoneId: 'Asia/Tokyo', locale: 'vi-VN' });
+    const p = await ctx.newPage(); p.errs = []; p.on('pageerror', e => p.errs.push(e.message));
+    await ctx.exposeFunction('__callServer', async (fn, a) => { try { return { ok: true, v: JSON.parse(JSON.stringify(api[fn](...a) ?? null)) }; } catch (e){ return { ok: false, m: e.message }; } });
+    await ctx.addInitScript(dk => {
+      function mkRun(){ let s = () => {}, f = () => {};
+        const r = new Proxy({}, { get(_, k){ if (k === 'withSuccessHandler') return x => { s = x; return r; }; if (k === 'withFailureHandler') return x => { f = x; return r; };
+          if (typeof k !== 'string') return undefined; return (...a) => { window.__callServer(k, a).then(v => v.ok ? s(v.v) : f({ message: v.m })); }; } }); return r; }
+      window.google = { script: { get run(){ return mkRun(); }, url: { getLocation(cb){ setTimeout(() => cb({ parameter: { lang: 'vi' }, hash: '' }), 20); } }, history: { replace(){}, push(){} } } };
+      try { if (dk) localStorage.setItem('sbw.dk', dk); } catch (e){}
+    }, dk || '');
+    await p.goto('http://127.0.0.1:' + PORT + '/'); await W(p, 1500);
+    return p;
+  }
+  const esc = async p => { for (let i = 0; i < 4 && await p.locator('.modal-back').count(); i++){ await p.keyboard.press('Escape'); await W(p, 250); } };
+  const top = p => p.locator('.modal-back:not(.closing)').last();
+
+  console.log('— Quản lý: checklist theo giờ trong "Việc hôm nay" —');
+  const m = await open(1280, 900);
+  await m.click('[data-ltab="manager"]'); await W(m, 250);
+  await m.fill('#mgrPwd', 'Otagawa2026x'); await m.click('#mgrLoginBtn');
+  await m.waitForFunction(() => !!document.querySelector('[data-mtab]'), null, { timeout: 20000 }); await W(m, 1500); await esc(m);
+  await m.evaluate(() => { const d = document.getElementById('jobDet'); if (d) d.open = true; }); await W(m, 300);
+  ok('thẻ Việc hôm nay có dòng ⏰ Checklist theo giờ 0/28 + nút Mở', /0\/28/.test(await m.locator('#jobCard .hk-sec .hk-line').innerText().catch(() => '')) && await m.locator('#jobCard [data-hkopen]').count() === 1, await m.locator('#jobCard').innerText().catch(() => 'no card'));
+  await m.locator('#jobCard .hk-sec').screenshot({ path: SH('mgr-sec') });
+  await m.locator('#jobCard [data-hkopen]').click(); await W(m, 700);
+  ok('bấm Mở → hộp checklist, đủ 28 mục', await top(m).locator('.hk-slot .tr-it').count() === 28);
+  await m.fill('#hkBy', 'Lâm');
+  await top(m).locator('[data-hks="h21"]').click(); await W(m, 600);
+  let dd = (api.readJsonKey_('hk:' + YM) || {})[TODAY.slice(8)] || {};
+  ok('quản lý tick → máy chủ ghi tên "Lâm"', dd.h21 && dd.h21.n === 'Lâm' && dd.h21.by === 'm', JSON.stringify(dd));
+  ok('dòng đã tick hiện giờ + tên', /Lâm/.test(await top(m).locator('.tr-it.is-c').first().innerText()));
+  await top(m).locator('.modal-box').screenshot({ path: SH('mgr-dialog') });
+  await esc(m); await W(m, 500);
+  ok('dòng trong thẻ cập nhật 1/28', /1\/28/.test(await m.locator('#jobCard .hk-line').innerText()));
+  await m.click('#jobCard [data-hkopen]'); await W(m, 700); await top(m).locator('[data-hktpl]').click(); await W(m, 600);
+  await top(m).locator('.tt-items').first().evaluate(t => { t.value += '\nBật nhạc nền'; });
+  await top(m).locator('[data-ttadd]').click(); await W(m, 200);
+  await top(m).locator('.tt-g').last().locator('.hk-at').fill('1530');
+  await top(m).locator('.tt-g').last().locator('.tt-gt').fill('Giữa chiều');
+  await top(m).locator('.tt-g').last().locator('.tt-items').fill('Kiểm tra kho');
+  await top(m).locator('.modal-box').screenshot({ path: SH('tpl-edit') });
+  await top(m).locator('#mOk').click(); await W(m, 1000);
+  const T = api.readJsonKey_('hk:tpl');
+  ok('sửa mẫu: thêm mục + khung 15:30 (nhập "1530"), sắp đúng giờ', T && T.slots.length === 6 && T.slots[3].at === '15:30' && T.slots[0].items.length === 9 && T.slots[0].items[0].id === 'h11', T && T.slots.map(s => s.at).join(','));
+  await esc(m); await W(m, 500);
+  ok('thẻ cập nhật tổng 30 mục', /\/30/.test(await m.locator('#jobCard .hk-line').innerText()));
+  await m.click('#jobCard [data-hkprint]'); await W(m, 1200);
+  const pv = await m.evaluate(() => { const pg = [...document.querySelectorAll('.modal-back:not(.closing) .doc-a4')]; return { n: pg.length, rows: pg.reduce((a, p) => a + p.querySelectorAll('tbody tr').length, 0), ck: pg.reduce((a, p) => a + (p.innerText.match(/✓/g) || []).length, 0), t: pg[0] && pg[0].innerText.slice(0, 120) }; });
+  ok('In / PDF: bảng đủ 6 khung + 30 mục, có ✓ của mục đã tick', pv.rows === 6 + 30 && pv.ck >= 2 && /時間帯別/.test(pv.t), JSON.stringify(pv));
+  await m.screenshot({ path: SH('print') });
+  await top(m).locator('[data-hkblank]').click(); await W(m, 1000);
+  ok('In mẫu trống: không có giờ tick, ngày để trống', await m.evaluate(() => { const bk = [...document.querySelectorAll('.modal-back:not(.closing):not(.is-under)')].pop(); const pg = [...bk.querySelectorAll('.doc-a4')]; return pg.length > 0 && pg.every(p => [...p.querySelectorAll('.hp-d')].every(c => !c.textContent.trim())) && /年　　月/.test(pg[0].innerText); }));
+  await esc(m); await W(m, 300);
+
+  console.log('— Việc tuần / tháng trên bản in —');
+  await m.click('[data-mtab="month"]'); await W(m, 1500); await esc(m);
+  const TD = Math.min(D + 1, N), TW = new Date(+YM.slice(0, 4), +YM.slice(5, 7) - 1, TD).getDay();
+  await m.click(TD <= 15 ? '#hpFirstBtn' : '#hpSecondBtn'); await W(m, 1500);
+  ok('khung xem trước có mục "Việc tuần / tháng" + nút thêm', await m.locator('.pv-ov #pvJobAdd').count() === 1 && await m.locator('.pv-ov [data-pvo="jobs"]').isChecked());
+  await m.click('.pv-ov #pvJobAdd'); await W(m, 600);
+  ok('hộp thêm việc mở sẵn "Hằng tuần", có chọn người phụ trách', await top(m).locator('#jbFreq').inputValue() === 'w' && await top(m).locator('#jbWhoBox input').count() === 3);
+  await top(m).locator('#jbName').fill('Lau tủ đông');
+  await top(m).locator('#jbDows input').evaluateAll((xs, TW) => xs.forEach(x => { x.checked = ['1', '4', String(TW)].includes(x.value); }), TW);
+  await top(m).locator('#jbWhoBox input[value="e2bbbb"]').check();
+  await top(m).locator('.modal-box').screenshot({ path: SH('job-add') });
+  await top(m).locator('#mOk').click(); await W(m, 1500);
+  const tpls = JSON.parse(api.kvGet_('jobtpl') || '[]');
+  const lt = tpls.find(x => x.title === 'Lau tủ đông');
+  ok('máy chủ lưu việc tuần (thứ 2, thứ 5 + thứ của ngày mai), phụ trách ラム', lt && lt.freq === 'w' && lt.dows.includes(TW) && lt.dows.includes(1) && JSON.stringify(lt.who) === '["e2bbbb"]', JSON.stringify(lt));
+  ok('danh sách trong khung xem trước hiện việc mới + 👤 ラム', /Lau tủ đông/.test(await m.locator('#pvJobs').innerText()) && /ラム/.test(await m.locator('#pvJobs').innerText()));
+  // thêm việc tháng không có người cố định
+  await m.click('.pv-ov #pvJobAdd'); await W(m, 500);
+  await top(m).locator('#jbName').fill('Vệ sinh máy đá');
+  await top(m).locator('#jbFreq').selectOption('m'); await top(m).locator('#jbMdays').fill('5, ' + TD);
+  await top(m).locator('#mOk').click(); await W(m, 1500);
+  await W(m, 800);
+  const fr = m.frameLocator('.pv-frame');
+  const jobRows = await fr.locator('.pub-jobrow').allInnerTexts();
+  ok('bản in: ngày mai có dòng "作業 Lau tủ đông（ラム）"', jobRows.length >= 1 && jobRows.some(x => /作業/.test(x) && /（ラム）/.test(x)), JSON.stringify(jobRows.slice(0, 4)));
+  ok('bản in: có "Vệ sinh máy đá" (việc tháng)', jobRows.some(x => /máy đá|製氷/.test(x)), JSON.stringify(jobRows));
+  await fr.locator('.pub-jobrow').first().evaluate(e => e.closest('.pub-day').scrollIntoView({ block: 'center' })); await W(m, 300);
+  await m.locator('.pv-ov').screenshot({ path: SH('half-preview') });
+  await fr.locator('.pub-jobrow').first().evaluate(e => e.closest('.pub-day').scrollIntoView({ block: 'center' }));
+  const dayEl = await fr.locator('.pub-jobrow').first().evaluateHandle(e => e.closest('.pub-day'));
+  await dayEl.asElement().screenshot({ path: SH('half-day-jobs') });
+  const pd = await fr.locator('.pub-jobrow').first().evaluate(e => e.closest('.pub-day').getBoundingClientRect().height).catch(() => 0);
+  if (pd){ await fr.locator('.pub-jobrow').first().evaluate(e => e.closest('.pub-day').scrollIntoView()); }
+  await m.locator('.pv-ov [data-pvo="jobs"]').uncheck(); await W(m, 800);
+  ok('bỏ tick "In dưới từng ngày" → bản in không còn dòng 作業', await fr.locator('.pub-jobrow').count() === 0);
+  await m.locator('.pv-ov [data-pvo="jobs"]').check(); await W(m, 500);
+  await m.click('.pv-ov [data-wmsheet]'); await W(m, 1200);
+  const wm = await m.evaluate(() => { const pg = [...document.querySelectorAll('.modal-back:not(.closing) .doc-a4')]; return { n: pg.length, t: pg.map(p => p.innerText).join('\n') }; });
+  ok('Bảng việc tuần / tháng riêng: có Hằng tuần + Hằng tháng, ngày + tên ラム', /Hằng tuần/.test(wm.t) && /Hằng tháng/.test(wm.t) && /Lau tủ đông/.test(wm.t) && /ラム/.test(wm.t) && /phụ trách: ラム/.test(wm.t), wm.t.slice(0, 400));
+  await m.screenshot({ path: SH('wm-sheet') });
+  await esc(m); await W(m, 300);
+  await m.click('.pv-x'); await W(m, 400);
+  ok('quản lý: không lỗi JS', !m.errs.length, m.errs.join(' | '));
+
+  console.log('— Nhân viên: thẻ checklist theo giờ —');
+  const s = await open(390, 844, st.dk); await esc(s);
+  await s.evaluate(() => { const b = document.querySelector('[data-stab="today"]'); if (b) b.click(); }); await W(s, 1500);
+  ok('hôm nay có ca → tab Hôm nay có thẻ ⏰ Checklist theo giờ', await s.locator('[data-hkmine]').count() === 1);
+  await s.locator('[data-hkmine]').scrollIntoViewIfNeeded(); await s.screenshot({ path: SH('staff-card') });
+  await s.click('[data-hkmine]'); await W(s, 800);
+  ok('mục quản lý đã tick → nhân viên không bỏ được', await top(s).locator('[data-hks="h21"]').isDisabled());
+  await top(s).locator('[data-hks="h11"]').click(); await W(s, 600);
+  dd = (api.readJsonKey_('hk:' + YM) || {})[TODAY.slice(8)] || {};
+  ok('nhân viên tick → ghi tên ラム', dd.h11 && dd.h11.n === 'ラム' && dd.h11.by === 'e2bbbb', JSON.stringify(dd.h11));
+  await top(s).locator('.modal-box').screenshot({ path: SH('staff-dialog') });
+  ok('nhân viên: không có nút sửa mẫu / in', await top(s).locator('[data-hktpl],[data-hkprint]').count() === 0);
+  await esc(s);
+  ok('nhân viên: không lỗi JS', !s.errs.length, s.errs.join(' | '));
+
+  console.log('— Bản in đào tạo: chia trang A4 —');
+  api.trainOpen(tok, 'e3cccc', true);
+  await m.click('[data-mtab="month"]'); await W(m, 800);
+  await m.evaluate(() => document.querySelector('[data-combo="peopleBox"][data-cp="train"]').click()); await W(m, 1200);
+  await m.click('[data-trblank]'); await W(m, 1500);
+  const tp = await m.evaluate(() => { const pg = [...document.querySelectorAll('.modal-back:not(.closing) .doc-a4')]; return { n: pg.length, rows: pg.reduce((a, p) => a + p.querySelectorAll('tbody tr').length, 0), over: pg.map(p => { const t = p.querySelector('table'); return t ? Math.round(t.getBoundingClientRect().bottom - p.getBoundingClientRect().bottom) : 0; }), sign: pg.filter(p => /署名/.test(p.innerText)).length, pno: !!pg[0].querySelector('.dp-pno') }; });
+  ok('39 mục + 7 nhóm chia thành ≥ 2 tờ, không dòng nào bị cắt, ô ký tên ở tờ cuối, có số trang', tp.n >= 2 && tp.rows === 46 && tp.over.every(x => x <= 0) && tp.sign === 1 && tp.pno, JSON.stringify(tp));
+  await m.screenshot({ path: SH('train-pages') });
+  await browser.close(); server.close();
+  console.log('\nĐẠT: ' + pass + '   ·   LỖI: ' + fail); process.exit(fail ? 1 : 0);
+})().catch(e => { console.log('HARNESS', e); process.exit(2); });

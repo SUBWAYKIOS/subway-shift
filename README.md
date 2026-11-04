@@ -48,6 +48,8 @@ Lợi so với mở thẳng link Apps Script:
 
 ## (Tuỳ chọn) Tự cập nhật Code.gs cho các quán
 
+**Cách nhanh (máy Mac):** bấm đúp `Cai-tu-cap-nhat.command` trong thư mục `Documents/SUBWAY-day-len` — tự bật đủ mọi bước dưới đây.
+
 Cài một lần, sau đó mỗi lần commit `apps-script/Code.gs` / `src/Index.html` là cả hai quán tự được dán code + cập nhật bản triển khai (giữ nguyên link /exec).
 
 1. Bật Apps Script API: https://script.google.com/home/usersettings → **On**.

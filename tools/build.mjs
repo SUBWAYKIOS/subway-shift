@@ -20,6 +20,8 @@ const ver = (app.match(/APP_VERSION\s*=\s*"([^"]+)"/) || [])[1] || "?";
 if (!app.includes("<!--SBW_GH_HEAD-->")) throw new Error("src/Index.html thiếu chỗ đánh dấu <!--SBW_GH_HEAD--> (cần bản từ 2026.10.24.4 trở lên).");
 if (!/window\.SBW_STORES\s*=/.test(cfg)) throw new Error("config.js phải khai báo window.SBW_STORES = [...]");
 const head = [
+  `<link rel="preconnect" href="https://script.google.com" crossorigin>`,          // v52: bắt tay sẵn với máy chủ Apps Script
+  `<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>`,
   `<script src="config.js?v=${build}"></script>`,
   `<link rel="manifest" href="manifest.webmanifest">`,
   `<link rel="icon" href="icons/icon-32.png">`,

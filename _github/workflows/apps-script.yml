@@ -1,0 +1,56 @@
+# (TUỲ CHỌN) Tự dán Code.gs + Index.html vào Apps Script của CẢ HAI quán và cập nhật bản triển khai
+# mỗi khi đẩy thay đổi trong apps-script/ hoặc src/. Chưa cài secret thì bước này tự bỏ qua, không lỗi.
+# Cách cài: xem README → "Tự cập nhật Code.gs cho các quán".
+name: Update Apps Script
+on:
+  push:
+    branches: [main]
+    paths: ["apps-script/**", "src/Index.html"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        store: [FOR, CTR]
+    env:
+      CLASPRC: ${{ secrets.CLASPRC_JSON }}
+      SCRIPT_ID: ${{ secrets[format('SCRIPT_ID_{0}', matrix.store)] }}
+      DEPLOY_ID: ${{ secrets[format('DEPLOY_ID_{0}', matrix.store)] }}
+    steps:
+      - name: Kiểm tra secret
+        id: chk
+        run: |
+          if [ -z "$CLASPRC" ] || [ -z "$SCRIPT_ID" ] || [ -z "$DEPLOY_ID" ]; then
+            echo "Chưa cài secret cho ${{ matrix.store }} — bỏ qua."; echo "skip=1" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.chk.outputs.skip != '1'
+      - uses: actions/setup-node@v4
+        if: steps.chk.outputs.skip != '1'
+        with:
+          node-version: 20
+      - name: Dán code vào Apps Script và cập nhật bản triển khai
+        if: steps.chk.outputs.skip != '1'
+        run: |
+          npm i -g @google/clasp@2.4.2 >/dev/null
+          printf '%s' "$CLASPRC" > ~/.clasprc.json
+          mkdir -p work && cd work
+          printf '{"scriptId":"%s","rootDir":"."}' "$SCRIPT_ID" > .clasp.json
+          clasp pull                      # lấy appsscript.json + file hiện có (không làm mất file nào)
+          # Ghi đè đúng file máy chủ đang có (tên tuỳ ngôn ngữ: Code / コード / Mã…): file nào chứa APP_VERSION thì là nó.
+          SRV=$(grep -l "APP_VERSION = '" *.js *.gs 2>/dev/null | head -1)
+          [ -z "$SRV" ] && { [ -f Code.js ] && SRV=Code.js || SRV=Code.gs; }
+          echo "File máy chủ: $SRV"; cp ../apps-script/Code.gs "$SRV"
+          cp ../src/Index.html Index.html
+          ls -la
+          clasp push --force
+          VER=$(grep -o "APP_VERSION = '[^']*'" ../apps-script/Code.gs | head -1 | cut -d"'" -f2)
+          clasp deploy -i "$DEPLOY_ID" -d "GitHub ${VER} (${GITHUB_SHA::7})"
+          # Apps Script giữ tối đa 200 phiên bản / dự án — gần đầy thì nhắc xoá bớt (Lịch sử dự án).
+          NV=$(clasp versions 2>/dev/null | grep -cE '^[0-9]+ - ' || true)
+          echo "Số phiên bản hiện có: $NV / 200"
+          if [ "${NV:-0}" -ge 180 ]; then echo "::warning::${{ matrix.store }}: đã có $NV/200 phiên bản Apps Script — vào Apps Script → Lịch sử dự án, xoá bớt bản cũ."; fi

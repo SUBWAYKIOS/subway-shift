@@ -199,6 +199,8 @@ function verifyToken_(token) {
   if (payload.r === 'emp' && (Number(payload.v) || 0) !== empVer_(payload.e)) return null;
   // v41: đổi mật khẩu quản lý → mọi phiên quản lý cũ (máy lạ đã biết mật khẩu cũ) chết ngay.
   if (payload.r === 'mgr' && (Number(payload.v) || 0) !== mgrVer_()) return null;
+  // v45: phiên mở từ máy quản lý đã ghi nhớ — máy bị gỡ (đăng xuất / "đăng xuất mọi máy") là phiên chết ngay.
+  if (payload.r === 'mgr' && payload.md && !mgrDevAlive_(payload.md)) return null;
   return payload;
 }
 
@@ -253,6 +255,61 @@ function devAlive_(d, empId) {
   var x = readDevs_()[d];
   return !!(x && String(x.e) === String(empId) && Date.now() - (Number(x.t) || 0) <= DEV_TTL_MS);
 }
+// ---- v45: GHI NHỚ ĐĂNG NHẬP QUẢN LÝ ----
+// Script Property MGR_DEV = { devId: { c: lúc tạo, t: lần dùng gần nhất, ua } }; khoá máy (mdk) = token ký
+// HMAC { r:'mdev', d, v: MGR_VER } — đổi mật khẩu quản lý là mọi khoá cũ vô hiệu. 60 ngày không mở thì hết hạn.
+var MDEV_TTL_MS = 60 * 24 * 60 * 60 * 1000, MDEV_MAX = 6;
+function readMgrDevs_() { try { return JSON.parse(props_().getProperty('MGR_DEV') || '{}') || {}; } catch (e) { return {}; } }
+function writeMgrDevs_(m) {
+  var now = Date.now();
+  Object.keys(m).forEach(function (k) { if (!m[k] || now - (Number(m[k].t) || 0) > MDEV_TTL_MS) delete m[k]; });
+  var ks = Object.keys(m).sort(function (a, b) { return (m[a].t || 0) - (m[b].t || 0); });
+  while (ks.length > MDEV_MAX) delete m[ks.shift()];
+  try { props_().setProperty('MGR_DEV', JSON.stringify(m)); } catch (e) {}
+}
+function mgrDevAlive_(d) { var x = readMgrDevs_()[d]; return !!(x && Date.now() - (Number(x.t) || 0) <= MDEV_TTL_MS); }
+function newMgrDevice_(ua) {
+  var m = readMgrDevs_(), d = 'm' + Utilities.getUuid().replace(/-/g, '').slice(0, 19), now = Date.now();
+  m[d] = { c: now, t: now, ua: uaLabel_(ua) };
+  writeMgrDevs_(m);
+  return { d: d, mdk: signToken_({ r: 'mdev', d: d, v: mgrVer_() }) };
+}
+/** Mở app bằng khoá máy quản lý → phiên quản lý mới, hoặc { err }. */
+function resumeMgr_(mdk) {
+  var p = null;
+  try {
+    var parts = String(mdk || '').split('.');
+    if (parts.length === 2 && Utilities.base64EncodeWebSafe(
+          Utilities.computeHmacSha256Signature(parts[0], getSecret_('TOKEN_SECRET'))) === parts[1])
+      p = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString());
+  } catch (e) { p = null; }
+  if (!p || p.r !== 'mdev' || !p.d) return { err: 'bad' };
+  if ((Number(p.v) || 0) !== mgrVer_()) return { err: 'revoked' };          // đã đổi mật khẩu
+  var m = readMgrDevs_(), x = m[p.d];
+  if (!x) return { err: 'revoked' };
+  if (Date.now() - (Number(x.t) || 0) > MDEV_TTL_MS) return { err: 'expired' };
+  if (Date.now() - (Number(x.t) || 0) > 60 * 60 * 1000) { x.t = Date.now(); writeMgrDevs_(m); }   // gia hạn (tối đa 1 lần / giờ)
+  return { token: signToken_({ r: 'mgr', e: null, v: mgrVer_(), md: p.d, x: Date.now() + TOKEN_TTL_MS }) };
+}
+/** Quản lý đăng xuất trên máy này → gỡ khoá ghi nhớ của máy này. */
+function forgetMgrDevice(token) {
+  var p = requireManager_(token);
+  if (p.md) { var m = readMgrDevs_(); if (m[p.md]) { delete m[p.md]; writeMgrDevs_(m); } }
+  return { ok: true };
+}
+/** Danh sách máy quản lý đang ghi nhớ / đăng xuất tất cả (trừ máy đang dùng nếu keepMe). */
+function mgrDevices(token) {
+  var p = requireManager_(token), m = readMgrDevs_();
+  return Object.keys(m).map(function (k) { return { ua: m[k].ua || '?', c: m[k].c || 0, t: m[k].t || 0, me: k === p.md }; })
+    .sort(function (a, b) { return b.t - a.t; });
+}
+function mgrDevicesClear(token, keepMe) {
+  var p = requireManager_(token), m = readMgrDevs_(), out = {};
+  if (keepMe && p.md && m[p.md]) out[p.md] = m[p.md];
+  writeMgrDevs_(out);
+  return { ok: true, left: Object.keys(out).length };
+}
+
 function uaLabel_(ua) {
   var s = String(ua || '').slice(0, 24).replace(/[<>"']/g, '');
   return s || '?';
@@ -465,9 +522,9 @@ function throttle_(bucket) {
 /** Client gọi đầu tiên khi mở app. Không cần token — chỉ trả danh sách tên
  *  và trạng thái "đã đặt mã PIN hay chưa", không trả bất kỳ mã nào. */
 // Phải trùng với APP_VERSION trong Index.html — lệch là app báo "dán lại cả hai file".
-var APP_VERSION = '2026.10.24.5';
+var APP_VERSION = '2026.11.04.1';
 
-function bootstrap(dk, ym) {
+function bootstrap(dk, ym, mdk) {
   var t0 = Date.now();
   warmSecrets_();
   var ST = readSettings_(), AT = ST.att || {};
@@ -478,17 +535,26 @@ function bootstrap(dk, ym) {
     var r; try { r = resumeDevice_(dk); } catch (eR) { r = { err: 'data' }; }
     if (r.token) session = r; else sessionErr = r.err;
   }
+  // v45: máy quản lý đã ghi nhớ (không có phiên nhân viên) → vào thẳng chế độ quản lý.
+  var mgrSession = null, mgrErr = null;
+  if (!session && mdk) {
+    var rm; try { rm = resumeMgr_(mdk); } catch (eM) { rm = { err: 'data' }; }
+    if (rm.token) mgrSession = rm; else mgrErr = rm.err;
+  }
   // Máy đã ghi nhớ vào thẳng → không cần biết ai đã đặt mã (chỉ màn đăng nhập dùng) → bớt một lượt đọc sheet.
   var pinMap = session && session.token ? null : readAllPinIds_();
   var tM = 0, month = null;
-  if (session && session.token && ym) {
+  var tokPre = (session && session.token) || (mgrSession && mgrSession.token) || '';
+  if (tokPre && ym) {
     var t1 = Date.now();
-    try { month = loadMonth(session.token, ym); } catch (e) { month = null; }
+    try { month = loadMonth(tokPre, ym); } catch (e) { month = null; }
     tM = Date.now() - t1;
   }
   return {
     session: session,          // mở bằng máy đã ghi nhớ → vào thẳng (v24: session.weak = mã cũ cần đổi)
     sessionErr: sessionErr,    // 'expired' | 'revoked' | 'bad'
+    mgrSession: mgrSession,    // v45: máy quản lý đã ghi nhớ → vào thẳng chế độ quản lý
+    mgrErr: mgrErr,
     employees: employees.map(function (e) {
       return { id: e.id, name: e.name, hasPin: pinMap ? !!pinMap[e.id] : true };
     }),
@@ -553,11 +619,15 @@ function normalizeSettings_(o) {
   out.weeklyOff = (o.weeklyOff === undefined) ? true : !!o.weeklyOff;
   // Kết nối với các quán khác (xin / nhận chi viện). Mặc định tắt.
   out.hubOn = !!o.hubOn;
+  // v50.1: checklist theo khung giờ — bật / tắt cho cả quán (mặc định bật).
+  out.hkOn = o.hkOn === undefined ? true : !!o.hkOn;
+  // v50: người đi chi viện được (quản lý chọn) — ngày nào chưa có ca ở quán mình thì quán khác thấy và "nhặt về".
+  out.supPool = (Array.isArray(o.supPool) ? o.supPool : []).map(String).filter(function (x, i, a) { return /^[\w-]{1,40}$/.test(x) && a.indexOf(x) === i; }).slice(0, 80);
   // Mã quán (v.8): 2–6 chữ in hoa/số, đứng trước số nhân viên → mã nhân viên "OTA-007".
   out.storeCode = /^[A-Z0-9]{2,6}$/.test(String(o.storeCode || '')) ? String(o.storeCode) : '';
   out.storeCodeAuto = !!(out.storeCode && o.storeCodeAuto);     // mã do máy tự đặt → đổi tên quán thì đặt lại
   // Giao diện (v.6): mẫu mặc định của quán, màu chủ đạo, màu chữ dặn dò, màu bản in.
-  out.skin = ['modern', 'blue', 'mono', 'classic'].indexOf(o.skin) !== -1 ? o.skin : 'modern';
+  out.skin = ['modern', 'glass', 'blue', 'mono', 'classic'].indexOf(o.skin) !== -1 ? o.skin : 'modern';
   var hex6 = function (x) { return /^#[0-9a-fA-F]{6}$/.test(String(x || '')) ? String(x) : ''; };
   out.accent = hex6(o.accent);
   out.noteColor = hex6(o.noteColor);
@@ -570,7 +640,7 @@ function normalizeSettings_(o) {
   // Tuỳ chỉnh bản in (v.10)
   var po = o.prOpt && typeof o.prOpt === 'object' ? o.prOpt : {};
   out.prOpt = { fs: [0.9, 1, 1.12].indexOf(Number(po.fs)) !== -1 ? Number(po.fs) : 1 };
-  ['tasks', 'off', 'notes', 'stats'].forEach(function (k) { out.prOpt[k] = po[k] === undefined ? true : !!po[k]; });
+  ['tasks', 'off', 'notes', 'stats', 'jobs', 'newbie'].forEach(function (k) { out.prOpt[k] = po[k] === undefined ? true : !!po[k]; });
   ['code', 'star', 'stamp', 'at'].forEach(function (k) { out.prOpt[k] = !!po[k]; });
   out.prOpt.title = String(po.title == null ? '' : po.title).replace(/[<>]/g, '').trim().slice(0, 40);
   // Điều kiện thay thế cho định mức (v.9): "cần N người — có M người ベテラン là đủ".
@@ -596,6 +666,20 @@ function normalizeSettings_(o) {
     out.altRules.push({ n: n, m: m });
   });
   out.altRules.sort(function (a, b) { return a.n - b.n; });
+  // v2026.11.04: phương án mở cửa — "từ 8:00 cần 1 người" HOẶC "từ 9:00 cần 2 người", theo thứ / ngày lễ.
+  out.openAlt = [];
+  (Array.isArray(o.openAlt) ? o.openAlt : []).slice(0, 6).forEach(function (r) {
+    if (!r) return;
+    var ds = [];
+    (Array.isArray(r.dows) ? r.dows : []).forEach(function (k) { k = String(k); if (/^(d[0-6]|hol)$/.test(k) && ds.indexOf(k) === -1) ds.push(k); });
+    var ops = [];
+    (Array.isArray(r.opts) ? r.opts : []).slice(0, 4).forEach(function (x) {
+      var at = Math.round(Number(x && x.at) * 2) / 2, n = Math.round(Number(x && x.n));
+      if (at >= 0 && at <= 26 && n >= 1 && n <= 20 && !ops.some(function (y) { return y.at === at; })) ops.push({ at: at, n: n });
+    });
+    ops.sort(function (a, b) { return a.at - b.at; });
+    if (ds.length && ops.length >= 2) out.openAlt.push({ dows: ds, opts: ops });
+  });
   // Thứ tự nhân viên (v.7): bản in / màn ngày xếp theo giờ vào · chức vụ · thứ tự quán.
   var ORD_ = ['time', 'rank', 'list'], oo = o.ord || {};
   out.ord = {
@@ -939,7 +1023,7 @@ function mgrPwdMatch_(password) {
   for (var i = 0; i < list.length; i++) if (stored ? stored === hashPwd_(list[i]) : list[i] === DEFAULT_MANAGER_PASSWORD) return i;
   return -1;
 }
-function loginManager(password, alts) {
+function loginManager(password, alts, remember, ua) {
   var th = throttle_('mgr');
   var stored = props_().getProperty('MANAGER_PWD_HASH');
   var mi = mgrPwdMatch_(password), ok = mi !== -1;
@@ -949,15 +1033,19 @@ function loginManager(password, alts) {
   var must = !stored && MGR_FORCE_PWD_CHANGE;
   var pl = { r: 'mgr', e: null, v: mgrVer_(), x: Date.now() + TOKEN_TTL_MS };
   if (must) pl.pc = 1;
+  // v45: "Ghi nhớ đăng nhập trên máy này" — lần sau mở app vào thẳng, khỏi gõ mật khẩu.
+  var dv = (remember && !must) ? newMgrDevice_(ua) : null;
+  if (dv) pl.md = dv.d;
   return {
     token: signToken_(pl),
+    mdk: dv ? dv.mdk : '',
     isDefaultPassword: !stored,
     mustChange: must,
     mi: mi
   };
 }
 
-function changeManagerPassword(token, oldPassword, newPassword, oldAlts) {
+function changeManagerPassword(token, oldPassword, newPassword, oldAlts, remember, ua) {
   ALLOW_PC_ = true;
   try { requireManager_(token); } finally { ALLOW_PC_ = false; }
   var thc = throttle_('mgr');
@@ -970,8 +1058,14 @@ function changeManagerPassword(token, oldPassword, newPassword, oldAlts) {
   props_().setProperty('MANAGER_PWD_HASH', hashPwd_(np));
   // v41: mọi phiên quản lý cũ (kể cả máy lạ từng biết mật khẩu cũ) hết hiệu lực; máy này nhận phiên mới.
   var mv = bumpMgrVer_();
+  // v45: máy lạ đã ghi nhớ cũng bị đăng xuất; máy đang đổi (đã ghi nhớ hoặc vừa chọn ghi nhớ) nhận khoá mới.
+  var keep = !!(WHO_ && WHO_.md) || !!remember;
+  writeMgrDevs_({});
+  var dv = keep ? newMgrDevice_(ua || (WHO_ && WHO_.md ? 'Web' : '')) : null;
+  var pl = { r: 'mgr', e: null, v: mv, x: Date.now() + TOKEN_TTL_MS };
+  if (dv) pl.md = dv.d;
   // v24: trả phiên mới (không còn cờ "phải đổi mật khẩu").
-  return { ok: true, token: signToken_({ r: 'mgr', e: null, v: mv, x: Date.now() + TOKEN_TTL_MS }) };
+  return { ok: true, token: signToken_(pl), mdk: dv ? dv.mdk : '' };
 }
 
 /** Nhân viên đã có mã — đăng nhập bằng mã đó. */
@@ -2384,6 +2478,7 @@ function normTpl_(o, prev) {
     slot: base.slot, photo: base.photo, note: base.note,
     role: role, wf: wf, wt: wt, mins: Math.max(1, Math.min(240, Math.round(Number(o.mins) || 15))),
     items: normJobItems_(o.items, prev && prev.items),
+    who: role === 'none' ? cleanTo_(o.who) : [],          // v48: người phụ trách cố định (việc giao tay)
     from: prev ? (prev.from || from) : from, until: null, at: Date.now()
   };
   var trx = jobTranslate_(base, prev, o.tr);
@@ -2598,6 +2693,7 @@ function assertJobActor_(who, ym, day, st, empId, key) {
     var tp = jobTplOf_(key);
     var byRole = !to.length && tp && tp.role && tp.role !== 'none' && empOnShift_(ym, day, empId);
     // v2026.10.16: việc trong checklist bấm thẻ về, chưa gán người → người làm ca cuối tích được.
+    if (!byRole && !to.length && tp && (tp.who || []).indexOf(String(empId)) !== -1) byRole = true;   // v48: người phụ trách cố định
     if (!byRole && !to.length && tp) {
       var cc0 = attCfg_().closeCheck;
       byRole = !!(cc0 && cc0.on && (cc0.ids || []).indexOf(tp.id) !== -1 && ccIsLast_(ym, day, empId));
@@ -2873,7 +2969,7 @@ function doPost(e) {
 // Gọi được ĐÚNG những hàm mà google.script.run gọi được (hàm cấp cao nhất, tên không kết thúc bằng "_"),
 // nên quyền hạn y như bản chạy trong Apps Script: mọi hàm vẫn tự kiểm token / quyền quản lý.
 // ===========================================================================
-var RPC_DENY_ = { doGet: 1, doPost: 1 };
+var RPC_DENY_ = { doGet: 1, doPost: 1, pushDailyTick: 1, capQuyenDrive: 1 };
 function rpcHandle_(body) {
   var fn = String(body.fn || '');
   if (!/^[A-Za-z][A-Za-z0-9]{0,63}$/.test(fn) || RPC_DENY_[fn]) return { ok: 0, m: 'Thao tác không hợp lệ.' };
@@ -2883,15 +2979,21 @@ function rpcHandle_(body) {
   var args = Array.isArray(body.args) ? body.args.slice(0, 12) : [];
   try {
     warmSecrets_();
+    CALL_VIA_ = 'gh';
     var v = f.apply(null, args);
     return { ok: 1, v: v === undefined ? null : v };
   } catch (err) {
     return { ok: 0, m: String((err && err.message) || err) };
   }
 }
+/** v49.1: công cụ "Cài tự cập nhật" trên máy Mac hỏi mã Script của quán (để GitHub tự dán Code.gs + cập nhật bản triển khai).
+ *  Chỉ trả mã dự án + phiên bản — mã này không cho ai sửa được dự án nếu không có quyền trên Google. */
+function deployInfo() { return { scriptId: ScriptApp.getScriptId(), v: APP_VERSION }; }
 /** Link trang GitHub của quán này (quản lý mở app từ GitHub là tự ghi). Trống = chưa dùng GitHub. */
 function frontOnly_() { try { return props_().getProperty('FRONT_URL') || ''; } catch (e) { return ''; } }
 /** Link người dùng mở app: trang GitHub nếu có, không thì link /exec của Apps Script. */
+/** v44.1: link trong email — có trang GitHub thì luôn dùng trang GitHub (link cũ /exec lưu tay trong Cài đặt không đè). */
+function mailLink_(st) { return frontOnly_() || (st && st.appUrl) || ''; }
 function frontUrl_() { return frontOnly_() || attExecUrl_() || ''; }
 function joinUrl_(base, k, v) { return base ? base + (base.indexOf('?') === -1 ? '?' : '&') + k + '=' + encodeURIComponent(v) : ''; }
 /** Quản lý mở app từ trang GitHub → nhớ link đó để link vào nhanh, mã QR điểm danh, link tuyển dụng, email trỏ đúng trang. */
@@ -3566,7 +3668,8 @@ function deletePlan(token, yearMonth, slot) {
 //     wishMgr : lần QUẢN LÝ sửa hộ đăng ký của người đó gần nhất
 // Ghi thưa (tối đa 5 phút/lần mỗi loại) để không tốn quota.
 var SEEN_PROP = 'seenMap';
-var SEEN_FIELDS = ['login', 'open', 'wish', 'wishMgr'];
+var SEEN_FIELDS = ['login', 'open', 'wish', 'wishMgr', 'gh', 'gas'];   // v49: gh = mở bằng link mới (GitHub) · gas = link cũ (Apps Script)
+var CALL_VIA_ = 'gas';                // v49: rpcHandle_ (gọi từ trang GitHub) đổi thành 'gh'
 
 function readSeen_() {
   try { return JSON.parse(props_().getProperty(SEEN_PROP) || '{}') || {}; } catch (e) { return {}; }
@@ -3731,7 +3834,7 @@ function stripOthersNotes_(obj, me) {
   return out;
 }
 function loadMonthInner_(who, yearMonth) {
-  if (who.r === 'emp') markSeen_(who.e, 'open', false);
+  if (who.r === 'emp') { markSeen_(who.e, 'open', false); markSeen_(who.e, CALL_VIA_ === 'gh' ? 'gh' : 'gas', false); }
   if (who.r === 'mgr') { try { sweepJobPhotos_(false); } catch (e) {} try { storeCode_(); } catch (e) {} try { hubRegister_(false); } catch (e) {} hubSyncSoon_(); }
   var linked = who.r === 'mgr' ? linkedStores_().map(function (x) { return { id: x.id, name: x.name, code: x.code, open: x.open, close: x.close }; }) : [];
   if (who.r === 'mgr') hubPublish_(yearMonth, false);
@@ -3787,6 +3890,8 @@ function loadMonthInner_(who, yearMonth) {
     learn: (who.r === 'mgr') ? readLearn_() : null,
     // Lần đăng nhập / mở app / tự sửa đăng ký gần nhất — chỉ quản lý xem.
     seen: (who.r === 'mgr') ? readSeen_() : {},
+    // v49: link trang GitHub của quán — nhân viên còn mở bằng link cũ thì app mời chuyển sang.
+    front: frontOnly_(),
     // 🔔 Nhân viên báo nghỉ / xin đổi ca / báo sai lịch — hiện ngay khi quản lý mở app.
     mev: (who.r === 'mgr') ? mgrEventsOut_() : null,
     // Máy đang ghi nhớ đăng nhập (để quản lý đăng xuất từ xa) — chỉ quản lý.
@@ -3960,7 +4065,8 @@ var MGR_EV_KIND = {
   apply: ['📮', 'Có người ứng tuyển', '応募がありました'], health: ['🌡', 'Nhân viên báo không khoẻ', '体調不良の申告'],
   prof: ['👤', 'Nhân viên sửa hồ sơ', 'プロフィールの更新'],
   supAsk: ['🤝', 'Chi viện: cần duyệt', '応援：承認が必要'], supDone: ['✅', 'Chi viện: đã chốt', '応援：確定'],
-  supOff: ['✖', 'Chi viện: từ chối / huỷ', '応援：取消・辞退']
+  supOff: ['✖', 'Chi viện: từ chối / huỷ', '応援：取消・辞退'],
+  train: ['📋', 'Đào tạo: đã tự tick đủ, chờ xác nhận', '研修：全項目チェック済み・確認待ち']
 };
 // Yêu cầu đổi ca / báo nghỉ của nhân viên: CHỜ 60 giây (nhân viên còn bấm "Hoàn tác" được) rồi mới báo quản lý + gửi mail.
 var MGR_EV_DELAY_MS = 63000;   // 60 giây hoàn tác trên máy + 3 giây dư cho mạng chậm
@@ -4043,7 +4149,7 @@ function mgrFlushMail(token) { auth_(token); return mgrFlushMail_(); }
 function mailQueueTick() { if (!tickGate_('mail', 55)) return false; return mgrFlushMail_(); }
 /** Có nhân viên nào đăng ký nhận thư không (thì phải giữ trình kích hoạt 5 phút để gửi thư cho họ). */
 function staffMailInUse_() {
-  try { return readEmployees_().some(function (e) { return !!e.email; }) || props_().getProperty('SMQ') === '1'; } catch (e) { return true; }
+  try { return readEmployees_().some(function (e) { return !!e.email; }) || props_().getProperty('SMQ') === '1' || pushInUse_(); } catch (e) { return true; }
 }
 function ensureMailTrigger_(on) {
   try {
@@ -4061,6 +4167,7 @@ function mgrEvText_(ev) {
   return { kind: kind, name: name, dd: dd };
 }
 function mgrMail_(ev) {
+  pushMgrEv_(ev);           // v45: thông báo đẩy cho quản lý (độc lập với email)
   try {
     var st = readSettings_();
     if (!st.mailOn || !st.mailTo) return false;
@@ -4076,7 +4183,7 @@ function mgrMail_(ev) {
       '日付 / Ngày: ' + x.dd + '\n' +
       (ev.t ? 'メモ / Ghi chú: ' + ev.t + '\n' : '') +
       '受付 / Lúc: ' + when + '\n\n' +
-      ((st.appUrl || frontOnly_()) ? 'アプリ / Mở app: ' + (st.appUrl || frontOnly_()) + '\n\n' : '') +
+      (mailLink_(st) ? 'アプリ / Mở app: ' + mailLink_(st) + '\n\n' : '') +
       '— ' + store + ' シフトアプリ（自動送信）';
     MailApp.sendEmail({ to: st.mailTo, subject: subject.slice(0, 200), body: body, name: store + ' シフト' });
     return true;
@@ -6118,7 +6225,7 @@ function supportTeam(token, yearMonth, day) {
   var hrow = supRows_().filter(function (x) { return x.id === hostId; })[0] || { id: hostId, name: sup.supTo.name, code: sup.supTo.code || '', emps: [] };
   var out = { store: hrow.name || sup.supTo.name || '', start: Number(sup.start), end: Number(sup.end), rows: [] };
   try {
-    var hd = peerStoreData_(hubSS_(false), hrow, ym) || { emps: [], sched: {}, err: true };
+    var hd = peerStoreCached_(hrow, ym, true) || { emps: [], sched: {}, err: true };   // v52: đọc MỚI quán kia (1 lần mở), cập nhật luôn bản nhớ tạm dùng chung
     if (hd.err) out.err = true;
     var names = {};
     (hd.emps || []).forEach(function (em) { if (em && em.id) names[em.id] = em.name; });
@@ -6525,6 +6632,7 @@ function mySnapshot_(ym) {
     at: Date.now(), name: storeLabel_(), code: storeCode_(), open: Number(st.openHour) || 8, close: Number(st.closeHour) || 21,
     hideDraft: st.hideDraft === true, lock: mode === 'all' ? '1' : (mode === 'h1' ? 'h1' : ''),
     emps: emps.map(function (e) { return { id: e.id, code: e.code || '', name: e.name, type: e.type === 'staff' ? 'staff' : 'sa' }; }),
+    pool: st.supPool || [],
     sched: peerCompact_(readMonthNormalized_('schedule:' + ym, emps)),
     wish: peerCompact_(readWish_(ym) || {}),
     un: peerUnav_(readMonthNormalized_('requests:' + ym, emps))
@@ -6579,12 +6687,12 @@ function peerStoreData_(ss, row, ym) {
       var lockRaw = String((function () { var r0 = findRow_(sh, 'lock:' + ym); return r0 === -1 ? '' : readCellValue_(sh, r0); })() || '');
       return { at: Date.now(), src: 'live', name: String(set.storeName || row.name || '').slice(0, 40), code: String(set.storeCode || row.code || ''),
                open: Number(set.openHour) || 8, close: Number(set.closeHour) || 21, hideDraft: set.hideDraft === true, lock: lockRaw,
-               emps: emps, sched: peerCompact_(peerReadKey_(sh, 'schedule:' + ym)), wish: peerCompact_(peerReadKey_(sh, 'wish:' + ym)),
+               emps: emps, pool: Array.isArray(set.supPool) ? set.supPool : [], sched: peerCompact_(peerReadKey_(sh, 'schedule:' + ym)), wish: peerCompact_(peerReadKey_(sh, 'wish:' + ym)),
                un: peerUnav_(peerReadKey_(sh, 'requests:' + ym)) };
     }
   } catch (e) { /* khác tài khoản → đọc bản đã đăng */ }
   if (row.off) return null;
-  var snap = hubSnapRead_(ss, row.id, ym);
+  var snap = hubSnapRead_(ss || hubSS_(false), row.id, ym);
   if (!snap) return null;
   snap.src = 'snap';
   return snap;
@@ -6779,20 +6887,49 @@ function supPendMerge_(ym, guests) {
 //   đúng khoá ghi, đúng bộ nhớ đệm. Không gọi được thì gửi lệnh vào hộp thư 'hubnote' của quán nhà.
 // • Trùng ca ở quán nhà: hỏi trước, đồng ý thì cắt phần trùng → giờ không bao giờ bị cộng hai lần.
 // ===========================================================================
-var SUP_TTL = 60;                 // giây: danh sách người tới giúp được nhớ tạm
+var SUP_TTL = 150;                // giây: danh sách người tới giúp được nhớ tạm (v52: 60 → 150, bị xoá ngay khi có thay đổi)
 function supKey_() {
   var p = props_(), k = p.getProperty('xsKey');
   if (!k) { k = Utilities.getUuid().replace(/-/g, ''); p.setProperty('xsKey', k); }
   return k;
 }
 function supMe_() { var me = myStore_(); var c = ''; try { c = storeCode_(); } catch (e) {} return { id: me.id, name: me.name, code: c }; }
-function supRows_() { try { return hubRowsOf_(hubSS_(false)); } catch (e) { return []; } }
+function supRows_() { return hubRowsCached_(); }
+// v52 — TỐC ĐỘ CHI VIỆN: danh bạ mạng + dữ liệu tháng của từng quán khác được nhớ tạm và DÙNG CHUNG cho
+// peerMonth (xem lịch quán khác) · supState (ai tới giúp mình) · supportTeam (nhân viên xem làm cùng ở quán kia).
+// Trước đây mỗi lệnh tự mở lại bảng tính của từng quán (mỗi lần 1–3 giây).
+var PEER_TTL = 150;
+function hubRowsKey_() { return 'hubrows:' + myStore_().id.slice(0, 20); }
+function hubRowsCached_() {
+  var c = CacheService.getScriptCache(), k = hubRowsKey_();
+  try { var h = c.get(k); if (h) return JSON.parse(h); } catch (e) {}
+  var rows = []; try { rows = hubRowsOf_(hubSS_(false)); } catch (e) { rows = []; }
+  try { var j = JSON.stringify(rows); if (j.length < 95000) c.put(k, j, PEER_TTL); } catch (e) {}
+  return rows;
+}
+function hubRowsBust_() { try { CacheService.getScriptCache().remove(hubRowsKey_()); } catch (e) {} }
+function peerCk_(id, ym) { return 'pst:' + String(id).slice(0, 24) + ':' + ym; }
+/** Dữ liệu tháng của quán `row` (đọc thẳng nếu được, không thì bản đã đăng) — nhớ tạm PEER_TTL giây. */
+function peerStoreCached_(row, ym, force) {
+  var c = CacheService.getScriptCache(), k = peerCk_(row.id, ym);
+  if (!force) { try { var h = c.get(k); if (h) { var o = JSON.parse(h); return o && o.none ? null : o; } } catch (e) {} }
+  var d = null; try { d = peerStoreData_(null, row, ym); } catch (e) { d = null; }
+  try { var j = JSON.stringify(d || { none: 1 }); if (j.length < 95000) c.put(k, j, PEER_TTL); } catch (e) {}
+  return d;
+}
+function peerBust_(id, ym) { try { CacheService.getScriptCache().remove(peerCk_(id, ym)); } catch (e) {} }
 function supRowOf_(idOrCode) {
   var k = String(idOrCode || ''), c = normCode_(k);
   return supRows_().filter(function (r) { return !r.off && (r.id === k || (c && r.code === c)); })[0] || null;
 }
 function supCk_(ym, hostId) { return 'supg:' + ym + ':' + String(hostId).slice(0, 30); }
-function supBust_(ym) { try { CacheService.getScriptCache().remove(supCk_(ym, myStore_().id)); } catch (e) {} }
+function supBust_(ym) {
+  try {
+    var me = myStore_().id, keys = [supCk_(ym, me), 'peer:' + me.slice(0, 20) + ':' + ym];
+    hubRowsCached_().forEach(function (r) { if (r && r.id && r.id !== me) keys.push(peerCk_(r.id, ym)); });   // v52: bản nhớ tạm của quán khác cũng bỏ
+    CacheService.getScriptCache().removeAll(keys);
+  } catch (e) {}
+}
 function supWhen_(date, s, e, L) { return String(date).slice(5).replace('-', '/') + ' ' + hubHm_(s) + '–' + (L ? 'L' : hubHm_(e)); }
 function supBase_(q) {
   var date = String(q.date || '');
@@ -7071,21 +7208,23 @@ function supScan_(ym, hostId) {
   var me = myStore_().id, out = {};
   supRows_().forEach(function (r) {
     if (r.off || r.id === hostId) return;
-    var sched = null;
+    var sched = null, pd = null;
     if (r.id === me) sched = readMonthObject_(getSheet_(), 'schedule:' + ym);
-    else { try { var sh = SpreadsheetApp.openById(r.id).getSheetByName(SHEET_NAME); sched = sh ? peerReadKey_(sh, 'schedule:' + ym) : null; } catch (e) { sched = null; } }
+    else { pd = peerStoreCached_(r, ym); sched = pd ? pd.sched : null; }      // v52: dùng chung bản nhớ tạm
     if (!sched) return;
     var names = {}; (r.emps || []).forEach(function (e) { names[String(e[0])] = { code: e[1], name: e[2] }; });
+    if (pd) (pd.emps || []).forEach(function (e) { if (e && e.id) names[e.id] = { code: e.code || '', name: e.name }; });
     if (r.id === me) readEmployees_().forEach(function (e) { names[e.id] = { code: e.code || '', name: e.name }; });
     Object.keys(sched).forEach(function (d) {
       Object.keys(sched[d] || {}).forEach(function (eid) {
         var en = sched[d][eid]; if (!en || en.off || !en.shifts) return;
         en.shifts.forEach(function (x) {
-          if (!x || !x.isSupport || !x.supTo || x.supTo.id !== hostId) return;
+          var to = x && x.isSupport ? (x.supTo ? x.supTo.id : x.sup) : null;     // bản nhớ tạm (gọn) ghi quán nhận ở x.sup
+          if (!to || to !== hostId) return;
           var n = names[eid] || {};
           (out[d] = out[d] || []).push({ store: r.id, storeName: r.name, storeCode: r.code, empId: eid, empName: n.name || '?',
             empCode: n.code ? r.code + '-' + n.code : '', start: Number(x.start), end: Number(x.end), atClose: !!x.endAtClose,
-            sid: x.sid || '', bs: x.breakStart != null ? Number(x.breakStart) : null, be: x.breakEnd != null ? Number(x.breakEnd) : null });
+            sid: x.sid || '', bs: x.breakStart != null ? Number(x.breakStart) : (x.bs != null ? Number(x.bs) : null), be: x.breakEnd != null ? Number(x.breakEnd) : (x.be != null ? Number(x.be) : null) });
         });
       });
     });
@@ -7135,9 +7274,14 @@ function supBorrow(token, reqJson) {
   if (!hubOn_()) throw new Error('Chưa bật "Kết nối các quán" trong Cài đặt.');
   var q; try { q = JSON.parse(reqJson); } catch (e) { throw new Error('Yêu cầu không hợp lệ.'); }
   var b = supBase_(q), me = supMe_(), f = findEmpByCode_(hubSS_(false), q.code);
+  // v50 "nhặt về" từ danh sách người rảnh: KHÔNG ghi đè, KHÔNG xếp hàng chờ — quán nhà ghi trong khoá của nó,
+  // ai tới trước được trước; người thứ hai nhận "đã có ca" (chống hai quán tranh một người).
+  var pool = !!q.pool; if (pool) q.cut = false;
   var p = { empId: f.empId, empName: f.empName, date: b.date, start: b.start, end: b.end, atClose: b.atClose, note: b.note,
             host: supHostInfo_(me), cut: !!q.cut, sid: String(q.sid || Utilities.getUuid().slice(0, 8)).slice(0, 16) };
   var r = xsCall_(f.row, 'assign', p), how = 'ok';
+  if (r.fail && pool) throw new Error('Quán ' + (f.row.name || '') + ' chưa phản hồi — chưa nhặt được ' + f.empName + '. Thử lại sau ít phút.');
+  if (!r.conflict) { try { CacheService.getScriptCache().remove('peer:' + me.id.slice(0, 20) + ':' + b.date.slice(0, 7)); } catch (eC) {} peerBust_(f.row.id, b.date.slice(0, 7)); }
   if (r.fail) {
     if (!q.cut) { var cf = supPeek_(f.row, f.empId, b, me.id); if (cf.length) return { conflict: cf, name: f.empName, store: f.row.name }; }
     supQueue_(f.row, 'assign', p); how = 'queued';
@@ -7178,7 +7322,8 @@ function supCancel(token, reqJson) {
   supPendDrop_(String(q.sid || ''));
   var res = xsCall_(row, 'remove', p);
   if (res.fail) supQueue_(row, 'remove', p);
-  supBust_(ym);
+  supBust_(ym); peerBust_(row.id, ym);
+  try { CacheService.getScriptCache().remove('peer:' + me.id.slice(0, 20) + ':' + ym); } catch (eC) {}
   out = supState(token, ym); out.done = res.fail ? 'queued' : 'ok';
   if (res.fail) Object.keys(out.guests).forEach(function (d) { out.guests[d] = out.guests[d].filter(function (g) { return g.sid !== q.sid; }); });
   return out;
@@ -7658,6 +7803,7 @@ function swapAskIds_(sw) {
 }
 /** Thư RIÊNG cho người vừa được nhờ đổi ca. Không gửi cho cả tiệm; người không có email hoặc tắt "đổi ca" thì bỏ qua. */
 function staffMailAsk_(ym, d, ownerId, askIds, sw) {
+  pushAsk_(ym, d, ownerId, askIds);      // v45
   try {
     var targets = staffMailTargets_('swap', ownerId).filter(function (t) { return askIds.indexOf(String(t.id)) !== -1; });
     if (!targets.length) return;
@@ -7678,7 +7824,7 @@ function staffMailAsk_(ym, d, ownerId, askIds, sw) {
       var body = t.name + 'さん\n\n' + name + 'さんが ' + dd + (when ? '（' + when + '）' : '') + ' のシフトをお願いしています。\n' +
         name + ' nhờ bạn nhận ca ngày ' + dd + (when ? ' (' + when + ')' : '') + '.\n\n' +
         'アプリで「承諾」か「断る」を選んでください。/ Mở app bấm đồng ý hoặc từ chối.\n' +
-        ((st.appUrl || frontOnly_()) ? (st.appUrl || frontOnly_()) + '\n' : '') + '\n— ' + store + ' シフトアプリ（自動送信・配信停止はアプリの「メール通知」から）';
+        (mailLink_(st) ? mailLink_(st) + '\n' : '') + '\n— ' + store + ' シフトアプリ（自動送信・配信停止はアプリの「メール通知」から）';
       return { to: t.email, s: subj, b: body };
     });
     staffMailQueue_(msgs);
@@ -7724,6 +7870,7 @@ function pubEntryTxt_(e, closeMap, d) {
 }
 /** Lịch đã công bố rồi mà sửa lại → thư CHỈ cho người có ca bị đổi, kèm đúng những ngày bị đổi. */
 function staffMailChange_(ym, ch) {
+  pushChange_(ym, ch);                   // v45
   try {
     var byEmp = {};
     ch.forEach(function (c) { var k = String(c.e); (byEmp[k] = byEmp[k] || []).push(c); });
@@ -7738,7 +7885,7 @@ function staffMailChange_(ym, ch) {
           pubEntryTxt_(c.f, closeMap, c.d) + '  →  ' + pubEntryTxt_(c.t, closeMap, c.d);
       });
       var body = t.name + 'さん\n\nシフトが変更されました。/ Ca làm của bạn vừa được sửa:\n\n' +
-        rows.join('\n') + '\n\n' + ((st.appUrl || frontOnly_()) ? (st.appUrl || frontOnly_()) + '\n' : '') +
+        rows.join('\n') + '\n\n' + (mailLink_(st) ? mailLink_(st) + '\n' : '') +
         '\n— ' + store + ' シフトアプリ（自動送信）';
       return { to: t.email, s: subj, b: body };
     });
@@ -7748,6 +7895,7 @@ function staffMailChange_(ym, ch) {
 }
 /** Công bố lịch → mỗi nhân viên đã đăng ký nhận một thư có ca của CHÍNH MÌNH. */
 function staffMailPublish_(ym, days) {
+  pushPublish_(ym, days);                // v45
   try {
     var targets = staffMailTargets_('pub', null); if (!targets.length) return;
     days = (days || []).map(Number).filter(function (d) { return d >= 1; }).sort(function (x, y) { return x - y; });
@@ -7772,7 +7920,7 @@ function staffMailPublish_(ym, days) {
       var body = t.name + 'さん\n\n' + y + '年' + m + '月' + part + 'のシフトが公開されました。\n' +
         'Lịch làm tháng ' + m + partVi + ' đã công bố.\n\n' +
         (lines.length ? lines.join('\n') + '\n\n合計 / Tổng: ' + (Math.round(tot * 100) / 100) + 'h\n' : 'シフトなし / Không có ca.\n') +
-        '\n' + ((st.appUrl || frontOnly_()) ? (st.appUrl || frontOnly_()) + '\n' : '') + '— ' + store + ' シフトアプリ（自動送信）';
+        '\n' + (mailLink_(st) ? mailLink_(st) + '\n' : '') + '— ' + store + ' シフトアプリ（自動送信）';
       return { to: t.email, s: subj, b: body };
     });
     staffMailQueue_(msgs);
@@ -8054,6 +8202,7 @@ function attRecord_(emp, kind, now, cfg, src) {
     return raw;
   }, 'điểm danh');
 
+  if (!dup && attLocked_(ym)) attLog_(ym, { k: 'punch', d: Number(dd), e: empId, n: emp.name, from: [], to: [{ k: kind, t: now }] });   // v47: hiếm — ca qua nửa đêm của tháng đã khoá
   var p = list[list.length - 1], sch = attSchedOf_(target, empId), res = {
     name: emp.name, id: empId, kind: kind, t: p.t, hm: attHm_(p.t), day: target, dup: dup,
     list: list, sched: sch, late: 0, early: 0, work: null
@@ -8074,7 +8223,8 @@ function attMonth(token, ym) {
   requireManager_(token);
   ym = attYm_(ym);
   var raw = readJsonKey_('att:' + ym), cfg = attCfg_();
-  return { ym: ym, days: raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}, on: !!cfg.on, grace: cfg.grace, now: Date.now(), kiosk: attKioskUrl_() };
+  return { ym: ym, days: raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}, on: !!cfg.on, grace: cfg.grace, now: Date.now(), kiosk: attKioskUrl_(),
+           lock: attLockOut_(ym), cur: attCurYm_() };      // v47: trạng thái khoá sổ
 }
 
 /** Nhân viên: điểm danh của chính mình trong tháng. */
@@ -8087,9 +8237,10 @@ function attMine(token, empId, ym) {
 }
 
 /** Quản lý sửa / thêm / xoá giờ điểm danh của một người trong một ngày (quên quét, quét nhầm). */
-function attEdit(token, ym, day, empId, json) {
+function attEdit(token, ym, day, empId, json, reason) {
   requireManager_(token);
   ym = attYm_(ym);
+  if (attLocked_(ym)) throw new Error('Tháng ' + ym + ' đã khoá sổ — bấm "Mở khoá" (ghi lý do) rồi mới sửa được.');   // v47
   var d = Math.round(Number(day));
   if (!(d >= 1 && d <= 31)) throw new Error('Ngày không hợp lệ.');
   empId = String(empId || '');
@@ -8107,14 +8258,22 @@ function attEdit(token, ym, day, empId, json) {
     if ((ATT_NEXT_[last] || []).indexOf(p.k) === -1) throw new Error('Thứ tự điểm danh không hợp lệ: ' + ATT_KIND_JA_[p.k] + ' (' + attHm_(p.t) + ').');
     last = p.k;
   });
+  var before = [];
   kvUpdate_('att:' + ym, function (raw) {
     raw = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
     var k = String(d);
     if (!raw[k]) raw[k] = {};
+    before = Array.isArray(raw[k][empId]) ? raw[k][empId].slice() : [];
     if (list.length) raw[k][empId] = list; else delete raw[k][empId];
     if (!Object.keys(raw[k]).length) delete raw[k];
     return raw;
   }, 'sửa điểm danh');
+  // v47: nhật ký sửa tay (giữ cùng sổ 7 năm, in vào PDF khi khoá sổ)
+  if (JSON.stringify(before.map(function (p) { return [p.k, p.t]; })) !== JSON.stringify(list.map(function (p) { return [p.k, p.t]; }))) {
+    var lk = attLockGet_(ym);
+    attLog_(ym, { k: 'edit', d: d, e: empId, from: before.map(function (p) { return { k: p.k, t: p.t }; }), to: list.map(function (p) { return { k: p.k, t: p.t }; }),
+                  r: String(reason || (lk && lk.open && lk.unlocks && lk.unlocks.length ? lk.unlocks[lk.unlocks.length - 1].r : '') || '').slice(0, 200) });
+  }
   return attMonth(token, ym);
 }
 
@@ -8304,6 +8463,7 @@ function hubRegister_(force) {
     if (row === -1) st.appendRow(cells);
     else st.getRange(row, 1, 1, cells.length).setValues([cells]);
     props.setProperty('HUB_REG', mark);
+    hubRowsBust_();
   } catch (e) {}
 }
 function peerReadKey_(sheet, key) {
@@ -8321,6 +8481,7 @@ function peerCompact_(map) {
       var sh = (e.shifts || []).filter(function (s) { return s && isFinite(Number(s.start)) && isFinite(Number(s.end)); })
         .map(function (s) {
           var x = { start: Number(s.start), end: Number(s.end) }; if (s.endAtClose) x.endAtClose = true; if (s.isSupport) x.isSupport = true;
+          if (s.isSupport && s.supTo && s.supTo.id) { x.sup = String(s.supTo.id).slice(0, 64); if (s.sid) x.sid = String(s.sid).slice(0, 16); }
           if (s.breakStart != null && s.breakEnd != null && isFinite(Number(s.breakStart))) { x.bs = Number(s.breakStart); x.be = Number(s.breakEnd); }
           return x;
         });
@@ -8339,13 +8500,13 @@ function peerMonth(token, yearMonth) {
   var cache = CacheService.getScriptCache(), ck = 'peer:' + myStore_().id.slice(0, 20) + ':' + ym;
   try { var hit = cache.get(ck); if (hit) return JSON.parse(hit); } catch (e) {}
   hubPublish_(ym, false);
-  var ss = hubSS_(false), me = myStore_().id, out = { at: Date.now(), stores: [] };
-  hubRowsOf_(ss).forEach(function (row) {
+  var me = myStore_().id, out = { at: Date.now(), stores: [] };
+  hubRowsCached_().forEach(function (row) {
     if (!row.id || row.id === me || row.off || out.stores.length >= 4) return;
     try {
-      var d = peerStoreData_(ss, row, ym); if (!d) return;
+      var d = peerStoreCached_(row, ym); if (!d) return;          // v52: nhớ tạm dùng chung với supState / supportTeam
       out.stores.push({ id: row.id.slice(0, 8), name: String(d.name || row.name || '').slice(0, 40), code: d.code || row.code || '',
-        open: Number(d.open) || 8, close: Number(d.close) || 21, emps: d.emps || [], sched: d.sched || {}, wish: d.wish || {}, un: d.un || {},
+        open: Number(d.open) || 8, close: Number(d.close) || 21, emps: d.emps || [], pool: d.pool || [], sched: d.sched || {}, wish: d.wish || {}, un: d.un || {},
         src: d.src, at: d.at || 0 });
     } catch (e) {}
   });
@@ -9459,4 +9620,1046 @@ function attSelfWho(token, empId) {
   var emp = readEmployees_().filter(function (e) { return e.id === String(empId); })[0];
   if (!emp) throw new Error('Không tìm thấy nhân viên này.');
   return attWhoOf_(emp, Date.now(), attCfg_());
+}
+
+// ===========================================================================
+// 🔔 WEB PUSH (v45) — thông báo đẩy lên điện thoại như app thật, KHÔNG cần Firebase.
+// ---------------------------------------------------------------------------
+// Chuẩn Web Push (RFC 8030 / 8291 / 8292). Apps Script không có sẵn mật mã đường cong elip
+// nên phần dưới tự làm: P-256 (ký ECDSA cho VAPID, trao khoá ECDH), HKDF-SHA256, AES-128-GCM.
+// Số lớn dùng BigInt (có trong Apps Script V8). KHÔNG dùng cú pháp 0n / 1n — luôn gọi BigInt(...)
+// cho chắc trình đọc mã của Apps Script.
+// Ngẫu nhiên: Utilities.getUuid() (Java SecureRandom) trộn qua SHA-256.
+// Chỉ chạy được với trang GitHub (trang Apps Script nằm trong khung googleusercontent — không
+// đăng ký được service worker nên không nhận được thông báo đẩy).
+// ===========================================================================
+var WP_ = null;
+function wp_() {
+  if (WP_) return WP_;
+  var B = BigInt;
+  var P = B('0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff');
+  var N = B('0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551');
+  var CB = B('0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b');
+  var G = [B('0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296'),
+           B('0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5')];
+  var Z = B(0), ONE = B(1), TWO = B(2), THREE = B(3), EIGHT = B(8);
+  function md(a, m) { var r = a % m; return r < Z ? r + m : r; }
+  function inv(a, m) {                     // nghịch đảo modulo (Euclid mở rộng)
+    var r0 = md(a, m), r1 = m, s0 = ONE, s1 = Z;
+    while (r1 !== Z) { var q = r0 / r1, t = r0 - q * r1; r0 = r1; r1 = t; t = s0 - q * s1; s0 = s1; s1 = t; }
+    return md(s0, m);
+  }
+  // Toạ độ Jacobian [X, Y, Z]; điểm vô cực = Z === 0.
+  function dbl(p) {
+    if (p[2] === Z || p[1] === Z) return [ONE, ONE, Z];
+    var X = p[0], Y = p[1], Zp = p[2];
+    var d = md(Zp * Zp, P), a = md(THREE * (X - d) * (X + d), P);     // a = -3
+    var y2 = md(Y * Y, P), s = md(B(4) * X * y2, P);
+    var X3 = md(a * a - TWO * s, P);
+    var Y3 = md(a * (s - X3) - EIGHT * y2 * y2, P);
+    var Z3 = md(TWO * Y * Zp, P);
+    return [X3, Y3, Z3];
+  }
+  function add(p, q) {                     // q dạng affine [x, y]
+    if (p[2] === Z) return [q[0], q[1], ONE];
+    var z2 = md(p[2] * p[2], P);
+    var u2 = md(q[0] * z2, P), s2 = md(q[1] * z2 * p[2], P);
+    var h = md(u2 - p[0], P), r = md(s2 - p[1], P);
+    if (h === Z) return r === Z ? dbl(p) : [ONE, ONE, Z];
+    var h2 = md(h * h, P), h3 = md(h2 * h, P), v = md(p[0] * h2, P);
+    var X3 = md(r * r - h3 - TWO * v, P);
+    var Y3 = md(r * (v - X3) - p[1] * h3, P);
+    var Z3 = md(p[2] * h, P);
+    return [X3, Y3, Z3];
+  }
+  function aff(p) {
+    if (p[2] === Z) return null;
+    var zi = inv(p[2], P), zi2 = md(zi * zi, P);
+    return [md(p[0] * zi2, P), md(p[1] * zi2 * zi, P)];
+  }
+  function mul(k, q) {
+    var r = [ONE, ONE, Z], bits = k.toString(2);
+    for (var i = 0; i < bits.length; i++) { r = dbl(r); if (bits.charAt(i) === '1') r = add(r, q); }
+    return aff(r);
+  }
+  function onCurve(q) {
+    if (!q || q[0] < Z || q[0] >= P || q[1] < Z || q[1] >= P) return false;
+    return md(q[1] * q[1] - (q[0] * q[0] * q[0] - THREE * q[0] + CB), P) === Z;
+  }
+  // ---- byte (mảng số 0..255) ----
+  function u8(a) { return Array.prototype.map.call(a, function (b) { return b & 255; }); }
+  function s8(a) { return a.map(function (b) { return b > 127 ? b - 256 : b; }); }
+  function str(s) { return u8(Utilities.newBlob(String(s)).getBytes()); }
+  function hex(a) { return a.map(function (b) { return (b < 16 ? '0' : '') + b.toString(16); }).join(''); }
+  function toInt(a) { return a.length ? B('0x' + hex(a)) : Z; }
+  function toBytes(x, len) { var h = x.toString(16); while (h.length < len * 2) h = '0' + h; var o = []; for (var i = 0; i < len; i++) o.push(parseInt(h.substr(i * 2, 2), 16)); return o; }
+  function sha(a) { return u8(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, s8(a))); }
+  function hmac(key, data) { return u8(Utilities.computeHmacSha256Signature(s8(data), s8(key))); }
+  var CNT = 0;
+  function rnd(n) {
+    var out = [];
+    while (out.length < n) out = out.concat(sha(str(Utilities.getUuid() + '|' + Utilities.getUuid() + '|' + Date.now() + '|' + (CNT++))));
+    return out.slice(0, n);
+  }
+  function b64u(a) { return Utilities.base64EncodeWebSafe(s8(a)).replace(/=+$/, ''); }
+  function unb64u(s) { s = String(s || '').replace(/\s+/g, ''); while (s.length % 4) s += '='; return u8(Utilities.base64DecodeWebSafe(s)); }
+  function pubBytes(q) { return [4].concat(toBytes(q[0], 32), toBytes(q[1], 32)); }
+  function pubPoint(a) { if (!a || a.length !== 65 || a[0] !== 4) return null; var q = [toInt(a.slice(1, 33)), toInt(a.slice(33))]; return onCurve(q) ? q : null; }
+  function newKey() {
+    var d;
+    do { d = toInt(rnd(32)); } while (d === Z || d >= N);
+    return { d: d, q: mul(d, G) };
+  }
+  // ---- ECDSA P-256 / SHA-256, chữ ký dạng r||s (64 byte) như JWT ES256 ----
+  function sign(d, msg) {
+    var hb = sha(msg), e = md(toInt(hb), N), db = toBytes(d, 32), ctr = 0;
+    while (true) {
+      // k = HMAC(d, băm ‖ ngẫu nhiên ‖ đếm) — vừa theo khoá vừa có ngẫu nhiên, không bao giờ lặp k.
+      var k = toInt(hmac(db, hb.concat(rnd(32), [ctr++ & 255])));
+      if (k === Z || k >= N) continue;
+      var R = mul(k, G), r = md(R[0], N);
+      if (r === Z) continue;
+      var s = md(inv(k, N) * (e + r * d), N);
+      if (s === Z) continue;
+      return toBytes(r, 32).concat(toBytes(s, 32));
+    }
+  }
+  // ---- AES-128 (chỉ chiều mã hoá — GCM chỉ cần vậy) ----
+  var SBOX = null, RCON = [1, 2, 4, 8, 16, 32, 64, 128, 27, 54];
+  function sbox() {
+    if (SBOX) return SBOX;
+    SBOX = new Array(256);
+    var p = 1, q = 1;
+    do {
+      p = p ^ ((p << 1) & 255) ^ (p & 128 ? 27 : 0);
+      q ^= q << 1; q ^= q << 2; q ^= q << 4; q &= 255; if (q & 128) q ^= 9;
+      var x = q ^ ((q << 1) | (q >> 7)) ^ ((q << 2) | (q >> 6)) ^ ((q << 3) | (q >> 5)) ^ ((q << 4) | (q >> 4));
+      SBOX[p] = (x ^ 99) & 255;
+    } while (p !== 1);
+    SBOX[0] = 99;
+    return SBOX;
+  }
+  function expand(key) {
+    var S = sbox(), w = key.slice();
+    for (var i = 16, r = 0; i < 176; i += 4) {
+      var t = w.slice(i - 4, i);
+      if (i % 16 === 0) { t = [S[t[1]] ^ RCON[r++], S[t[2]], S[t[3]], S[t[0]]]; }
+      for (var j = 0; j < 4; j++) w.push(w[i - 16 + j] ^ t[j]);
+    }
+    return w;
+  }
+  function xt(b) { return ((b << 1) ^ (b & 128 ? 27 : 0)) & 255; }
+  function aesBlock(w, inp) {
+    var S = sbox(), s = inp.slice(), r, c, i;
+    for (i = 0; i < 16; i++) s[i] ^= w[i];
+    for (r = 1; r <= 10; r++) {
+      for (i = 0; i < 16; i++) s[i] = S[s[i]];
+      var t = s.slice();                                    // ShiftRows (cột chính)
+      for (c = 0; c < 4; c++) for (var row = 1; row < 4; row++) s[c * 4 + row] = t[((c + row) % 4) * 4 + row];
+      if (r < 10) for (c = 0; c < 4; c++) {                 // MixColumns
+        var a0 = s[c * 4], a1 = s[c * 4 + 1], a2 = s[c * 4 + 2], a3 = s[c * 4 + 3], x = a0 ^ a1 ^ a2 ^ a3;
+        s[c * 4] ^= x ^ xt(a0 ^ a1); s[c * 4 + 1] ^= x ^ xt(a1 ^ a2); s[c * 4 + 2] ^= x ^ xt(a2 ^ a3); s[c * 4 + 3] ^= x ^ xt(a3 ^ a0);
+      }
+      for (i = 0; i < 16; i++) s[i] ^= w[r * 16 + i];
+    }
+    return s;
+  }
+  var RP = B('0xe1') << B(120), M128 = (ONE << B(128)) - ONE;
+  function gmul(x, y) {                     // nhân trong GF(2^128) theo quy ước GCM
+    var z = Z, v = y;
+    for (var i = 127; i >= 0; i--) {
+      if ((x >> B(i)) & ONE) z ^= v;
+      v = (v & ONE) ? ((v >> ONE) ^ RP) : (v >> ONE);
+    }
+    return z & M128;
+  }
+  function gcm(key, iv, pt) {
+    var w = expand(key), H = toInt(aesBlock(w, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+    var j0 = iv.concat([0, 0, 0, 1]), ct = [], ctr = 1;
+    for (var i = 0; i < pt.length; i += 16) {
+      ctr++;
+      var ks = aesBlock(w, iv.concat(toBytes(B(ctr), 4)));
+      for (var j = i; j < Math.min(i + 16, pt.length); j++) ct.push(pt[j] ^ ks[j - i]);
+    }
+    var y = Z;
+    for (var k = 0; k < ct.length; k += 16) {
+      var blk = ct.slice(k, k + 16); while (blk.length < 16) blk.push(0);
+      y = gmul(y ^ toInt(blk), H);
+    }
+    y = gmul(y ^ B(ct.length * 8), H);            // độ dài: AAD = 0 (64 bit cao), bản mã (64 bit thấp)
+    var tag = toBytes(y ^ toInt(aesBlock(w, j0)), 16);
+    return ct.concat(tag);
+  }
+  // ---- RFC 8291: mã hoá nội dung cho một máy nhận ----
+  function encrypt(uaPubB64, authB64, text, asKey) {
+    var uaPub = unb64u(uaPubB64), auth = unb64u(authB64), Q = pubPoint(uaPub);
+    if (!Q || auth.length !== 16) throw new Error('khoá máy nhận không hợp lệ');
+    var as = asKey || newKey(), asPub = pubBytes(as.q);
+    var ecdh = toBytes(mul(as.d, Q)[0], 32);
+    var prkKey = hmac(auth, ecdh);
+    var ikm = hmac(prkKey, str('WebPush: info').concat([0], uaPub, asPub, [1]));
+    var salt = rnd(16), prk = hmac(salt, ikm);
+    var cek = hmac(prk, str('Content-Encoding: aes128gcm').concat([0, 1])).slice(0, 16);
+    var nonce = hmac(prk, str('Content-Encoding: nonce').concat([0, 1])).slice(0, 12);
+    var body = gcm(cek, nonce, str(text).concat([2]));
+    return salt.concat([0, 0, 16, 0], [65], asPub, body);    // rs = 4096
+  }
+  // ---- RFC 8292: JWT VAPID ----
+  function jwt(dB64, aud, sub, exp) {
+    var h = b64u(str(JSON.stringify({ typ: 'JWT', alg: 'ES256' })));
+    var c = b64u(str(JSON.stringify({ aud: aud, exp: exp, sub: sub })));
+    return h + '.' + c + '.' + b64u(sign(toInt(unb64u(dB64)), str(h + '.' + c)));
+  }
+  WP_ = { newKey: newKey, pubBytes: pubBytes, pubPoint: pubPoint, b64u: b64u, unb64u: unb64u, toBytes: toBytes,
+          encrypt: encrypt, jwt: jwt, sign: sign, mul: mul, G: G, gcm: gcm, s8: s8 };
+  return WP_;
+}
+
+// ---------------------------------------------------------------------------
+// Lưu trữ: khoá 'push' trong sheet = { subs: [...], pref: { empId: { tm: 0|1 } }, cfg: { reg: ngày hạn đăng ký } }
+//   sub = { id, w: 'm' (quản lý) | empId, ep: endpoint, k: p256dh, a: auth, l: ngôn ngữ, ua, at, ok: lần gửi được gần nhất }
+// Khoá VAPID: Script Properties VAPID_D (khoá bí mật) / VAPID_Q (khoá công khai) — không nằm trong sheet.
+// ---------------------------------------------------------------------------
+var PUSH_MAX_SUBS = 80, PUSH_MAX_PER_WHO = 4;
+var PUSH_HOST_RE = /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.notify\.windows\.com|web\.push\.apple\.com|[a-z0-9.-]+\.push\.apple\.com)\/[\w\-.~%\/:+=]{8,700}$/;
+var PUSH_REG_DAY = 20;            // mặc định: hạn đăng ký lịch tháng sau là ngày 20
+function pushKeys_() {
+  var p = props_(), d = p.getProperty('VAPID_D'), q = p.getProperty('VAPID_Q');
+  if (d && q) return { d: d, q: q };
+  var W = wp_(), k = W.newKey();
+  d = W.b64u(W.toBytes(k.d, 32)); q = W.b64u(W.pubBytes(k.q));
+  p.setProperty('VAPID_D', d); p.setProperty('VAPID_Q', q);
+  return { d: d, q: q };
+}
+function pushRead_() {
+  var o = readJsonKey_('push');
+  if (!o || typeof o !== 'object' || Array.isArray(o)) o = {};
+  if (!Array.isArray(o.subs)) o.subs = [];
+  if (!o.pref || typeof o.pref !== 'object') o.pref = {};
+  if (!o.cfg || typeof o.cfg !== 'object') o.cfg = {};
+  return o;
+}
+/** Sửa khoá 'push' trong khoá script. Đang giữ khoá sẵn (hasLock) thì sửa luôn, không lồng khoá. */
+function pushEdit_(fn) {
+  var lock = LockService.getScriptLock(), mine = false;
+  try { mine = lock.hasLock(); } catch (e0) {}
+  if (!mine && !lock.tryLock(LOCK_WAIT_MS)) throw new Error('Hệ thống đang bận, vui lòng thử lại sau ít giây.');
+  try {
+    var sheet = getSheet_(), o = readMonthObject_(sheet, 'push');
+    if (!o || typeof o !== 'object' || Array.isArray(o)) o = {};
+    if (!Array.isArray(o.subs)) o.subs = [];
+    if (!o.pref || typeof o.pref !== 'object') o.pref = {};
+    if (!o.cfg || typeof o.cfg !== 'object') o.cfg = {};
+    var r = fn(o);
+    pubPut_(sheet, 'push', o);
+    return r;
+  } finally { if (!mine) lock.releaseLock(); }
+}
+function pushWho_(p) { return p.r === 'mgr' ? 'm' : String(p.e); }
+function pushInUse_() { try { return pushRead_().subs.length > 0; } catch (e) { return false; } }
+function pushLang_(l) { return l === 'ja' || l === 'en' ? l : 'vi'; }
+
+/** Thông tin cho màn Cài đặt thông báo. */
+function pushInfo(token) {
+  var p = auth_(token), o = pushRead_(), w = pushWho_(p);
+  var out = { pub: pushKeys_().q, mine: o.subs.filter(function (s) { return s.w === w; }).map(function (s) { return { ua: s.ua || '', at: s.at || 0, ok: s.ok || 0, ep: s.ep.slice(-24), host: s.ep.split('/')[2] || '', last: s.last || null }; }),
+              tm: p.r === 'emp' ? !(o.pref[w] && o.pref[w].tm === 0) : null, front: !!frontOnly_() };
+  if (p.r === 'mgr') {
+    var reg = o.cfg.reg === undefined ? PUSH_REG_DAY : Number(o.cfg.reg) || 0;
+    var cnt = {}; o.subs.forEach(function (s) { if (s.w !== 'm') cnt[s.w] = 1; });
+    out.reg = reg; out.staffOn = Object.keys(cnt).length; out.mgrOn = o.subs.filter(function (s) { return s.w === 'm'; }).length;
+  }
+  return out;
+}
+/** Máy này đăng ký nhận thông báo (dữ liệu PushSubscription.toJSON() từ trình duyệt). */
+function pushSubscribe(token, subJson, ua, lang) {
+  var p = auth_(token), s;
+  try { s = typeof subJson === 'string' ? JSON.parse(subJson) : subJson; } catch (e) { s = null; }
+  var ep = String(s && s.endpoint || ''), k = String(s && s.keys && s.keys.p256dh || ''), a = String(s && s.keys && s.keys.auth || '');
+  if (!PUSH_HOST_RE.test(ep)) throw new Error('Trình duyệt này không hỗ trợ thông báo đẩy.');
+  var W = wp_();
+  try { if (!W.pubPoint(W.unb64u(k)) || W.unb64u(a).length !== 16) throw 0; } catch (e2) { throw new Error('Đăng ký thông báo không hợp lệ — thử tắt rồi bật lại.'); }
+  if (!mailRate_('pushsub:' + pushWho_(p), 20, 3600)) throw new Error('Thử lại sau ít phút.');
+  pushKeys_();
+  var w = pushWho_(p);
+  var n = pushEdit_(function (o) {
+    o.subs = o.subs.filter(function (x) { return x.ep !== ep; });          // máy này trước đó của người khác → chuyển sang người đang đăng nhập
+    var mine = o.subs.filter(function (x) { return x.w === w; }).sort(function (x, y) { return (x.at || 0) - (y.at || 0); });
+    while (mine.length >= PUSH_MAX_PER_WHO) { var old = mine.shift(); o.subs = o.subs.filter(function (x) { return x !== old; }); }
+    o.subs.push({ id: Utilities.getUuid().slice(0, 8), w: w, ep: ep, k: k, a: a, l: pushLang_(lang), ua: uaLabel_(ua), at: Date.now(), ok: 0 });
+    while (o.subs.length > PUSH_MAX_SUBS) o.subs.shift();
+    return o.subs.filter(function (x) { return x.w === w; }).length;
+  });
+  ensurePushTrigger_(true);
+  ensureMailTrigger_(true);
+  return { ok: true, n: n };
+}
+/** Máy này thôi nhận (tắt trong Cài đặt / đăng xuất). */
+function pushUnsubscribe(token, endpoint) {
+  var p = auth_(token), w = pushWho_(p), ep = String(endpoint || '');
+  var n = pushEdit_(function (o) {
+    var before = o.subs.length;
+    o.subs = o.subs.filter(function (x) { return !(x.ep === ep && (x.w === w || p.r === 'mgr')); });
+    return before - o.subs.length;
+  });
+  return { ok: true, removed: n };
+}
+/** Nhân viên bật/tắt "nhắc ca ngày mai". Quản lý đặt ngày hạn đăng ký (0 = không nhắc). */
+function pushPrefs(token, prefJson) {
+  var p = auth_(token), x = {};
+  try { x = JSON.parse(prefJson || '{}') || {}; } catch (e) { x = {}; }
+  return pushEdit_(function (o) {
+    if (p.r === 'emp' && x.tm !== undefined) { var w = String(p.e); o.pref[w] = o.pref[w] || {}; o.pref[w].tm = x.tm ? 1 : 0; }
+    if (p.r === 'mgr' && x.reg !== undefined) { var r = Math.round(Number(x.reg)); o.cfg.reg = (r >= 1 && r <= 28) ? r : 0; }
+    return { ok: true };
+  });
+}
+/** Gửi thử tới các máy của chính người bấm. */
+function pushTest(token) {
+  var p = auth_(token), w = pushWho_(p);
+  if (!mailRate_('pushtest:' + w, 6, 3600)) throw new Error('Đã gửi thử nhiều lần — chờ một lúc rồi thử lại.');
+  var r = pushSend_([{ w: w, tx: { vi: ['✅ Thông báo đã bật', 'Máy này sẽ nhận thông báo của ' + storeLabel_() + '.'],
+                                  ja: ['✅ 通知がオンになりました', 'この端末に ' + storeLabel_() + ' の通知が届きます。'],
+                                  en: ['✅ Notifications are on', 'This device will get ' + storeLabel_() + ' notifications.'] }, tag: 'test' }]);
+  if (!r.sent && !r.fail && !r.err) throw new Error('Máy chủ chưa có đăng ký của máy này — bấm Tắt rồi Bật lại.');
+  return r;                 // v46.1: trả chi tiết từng máy (mã trả lời của Apple / Google) để hộp thoại hiện cho dễ dò
+}
+
+/**
+ * Gửi thông báo. items = [{ w: 'm' | empId | '*staff', tx: { vi: [tiêu đề, nội dung], ja: [...], en: [...] }, tag, url }]
+ * Mỗi máy nhận đúng ngôn ngữ nó chọn lúc bật. Máy hỏng (404/410) tự bị xoá. Lỗi gì cũng không làm hỏng thao tác chính.
+ */
+function pushSend_(items) {
+  var res = { sent: 0, fail: 0, code: 0 };
+  try {
+    if (!items || !items.length) return res;
+    var o = pushRead_();
+    if (!o.subs.length) return res;
+    var keys = pushKeys_(), W = wp_(), as = W.newKey(), front = frontOnly_() || '';
+    // VAPID "sub": Apple bắt buộc mailto: hoặc https: hợp lệ → trang GitHub, không có thì link /exec của quán.
+    var ex = attExecUrl_(), sub = /^https:\/\//.test(front) ? front.replace(/\?.*$/, '') : (/^https:\/\//.test(ex) ? ex : 'mailto:noreply@example.com');
+    var now = Math.floor(Date.now() / 1000), cache = CacheService.getScriptCache();
+    var reqs = [], meta = [];
+    items.forEach(function (it) {
+      o.subs.forEach(function (s) {
+        if (!(s.w === it.w || (it.w === '*staff' && s.w !== 'm'))) return;
+        var lg = pushLang_(s.l), t = (it.tx && (it.tx[lg] || it.tx.vi)) || ['', ''];
+        var payload = JSON.stringify({ t: String(t[0] || '').slice(0, 120), b: String(t[1] || '').slice(0, 600), tag: String(it.tag || '').slice(0, 60),
+                                       u: it.url || front || '', s: storeLabel_() });
+        try {
+          var aud = s.ep.split('/').slice(0, 3).join('/'), ck = 'wpjwt:' + aud.slice(8, 60), jwt = cache.get(ck);
+          if (!jwt) { jwt = W.jwt(keys.d, aud, sub, now + 12 * 3600); try { cache.put(ck, jwt, 11 * 3600); } catch (e1) {} }
+          var body = W.encrypt(s.k, s.a, payload, as);
+          // Gửi dạng Blob (byte thô) — mảng số trần có thể bị UrlFetchApp hiểu nhầm thành dữ liệu biểu mẫu.
+          reqs.push({ url: s.ep, method: 'post', contentType: 'application/octet-stream', payload: Utilities.newBlob(W.s8(body), 'application/octet-stream'), muteHttpExceptions: true, followRedirects: false,
+                      headers: { 'TTL': '86400', 'Urgency': it.urgent ? 'high' : 'normal', 'Content-Encoding': 'aes128gcm',
+                                 'Authorization': 'vapid t=' + jwt + ', k=' + keys.q } });
+          meta.push(s);
+        } catch (e2) { res.fail++; }
+      });
+    });
+    if (!reqs.length) return res;
+    var dead = [], okIds = [], last = {};
+    res.list = [];
+    for (var i = 0; i < reqs.length; i += 25) {
+      var part = reqs.slice(i, i + 25), out = [];
+      try { out = UrlFetchApp.fetchAll(part); } catch (e3) { out = []; res.err = String((e3 && e3.message) || e3).slice(0, 200); }
+      part.forEach(function (rq, j) {
+        var r = out[j], c = 0, txt = '';
+        try { c = r ? r.getResponseCode() : 0; } catch (e4) { c = 0; }
+        try { txt = r ? String(r.getContentText() || '').replace(/\s+/g, ' ').slice(0, 160) : 'no-response'; } catch (e6) { txt = ''; }
+        var s = meta[i + j];
+        last[s.id] = { c: c, e: c >= 200 && c < 300 ? '' : txt, at: Date.now() };
+        res.list.push({ ua: s.ua || '', host: s.ep.split('/')[2] || '', c: c, e: last[s.id].e });
+        if (c >= 200 && c < 300) { res.sent++; okIds.push(s.id); }
+        else { res.fail++; res.code = c; if (c === 404 || c === 410) dead.push(s.id); }     // 404/410: máy đã gỡ / hết hạn đăng ký
+      });
+    }
+    try {
+      pushEdit_(function (x) {
+        x.subs = x.subs.filter(function (s) { return dead.indexOf(s.id) === -1; });
+        var t = Date.now();
+        x.subs.forEach(function (s) { if (okIds.indexOf(s.id) !== -1) s.ok = t; if (last[s.id]) s.last = last[s.id]; });   // v46.1: kết quả lần gửi gần nhất (chẩn đoán)
+      });
+    } catch (e5) {}
+  } catch (e) { console.warn('pushSend_: ' + (e && e.stack || e)); }
+  return res;
+}
+
+// ---------------------------------------------------------------------------
+// Các loại thông báo
+// ---------------------------------------------------------------------------
+var PUSH_DOW_ = { vi: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'], ja: ['日', '月', '火', '水', '木', '金', '土'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] };
+function pushDd_(ym, d, lg) {
+  var y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7));
+  return m + '/' + d + '(' + PUSH_DOW_[lg][new Date(y, m - 1, d).getDay()] + ')';
+}
+function pushTx_(fn) { return { vi: fn('vi'), ja: fn('ja'), en: fn('en') }; }
+/** v46: link mở đúng màn trong app (?go=bell | shifts | wish | today, &ym=YYYY-MM). */
+function pushUrl_(q) { var f = frontOnly_(); return f ? f + (f.indexOf('?') === -1 ? '?' : '&') + q : ''; }
+/** Những người (empId) đang có máy nhận thông báo. */
+function pushStaffIds_() {
+  var o = pushRead_(), ids = {};
+  o.subs.forEach(function (s) { if (s.w !== 'm') ids[s.w] = 1; });
+  return ids;
+}
+function pushShiftTxt_(e, closeMap, d, lg) {
+  if (!e || e.off || !e.shifts || !e.shifts.length) return lg === 'ja' ? '休み' : lg === 'en' ? 'off' : 'nghỉ';
+  return e.shifts.map(function (s) { return (s.isSupport ? '✈' : '') + hhmm_(s.start) + '–' + hhmm_(endOf_(s, closeMap, d)); }).join(', ');
+}
+
+/** 🔔 Quản lý: báo nghỉ, xin đổi ca, chi viện… (gọi cùng chỗ gửi thư cho quản lý). */
+function pushMgrEv_(ev) {
+  try {
+    if (!pushInUse_()) return;
+    if (ev.e && !mailRate_('pmgr:' + ev.e, 10, 3600)) return;
+    var x = mgrEvText_(ev), urgent = ev.k === 'urgent' || ev.k === 'health' || ev.k === 'off';
+    var note = ev.t ? ' — ' + String(ev.t).slice(0, 120) : '';
+    pushSend_([{ w: 'm', urgent: urgent, tag: 'mgr-' + ev.id, url: pushUrl_('go=bell'), tx: {
+      vi: [x.kind[0] + ' ' + x.kind[1], x.name + (x.dd ? ' · ' + x.dd : '') + note],
+      ja: [x.kind[0] + ' ' + x.kind[2], x.name + (x.dd ? ' · ' + x.dd : '') + note],
+      en: [x.kind[0] + ' ' + x.kind[1], x.name + (x.dd ? ' · ' + x.dd : '') + note] } }]);
+  } catch (e) {}
+}
+/** 📅 Nhân viên: lịch vừa công bố — mỗi người nhận ca của chính mình. */
+function pushPublish_(ym, days) {
+  try {
+    var ids = pushStaffIds_(); if (!Object.keys(ids).length) return;
+    days = (days || []).map(Number).filter(function (d) { return d >= 1; }).sort(function (a, b) { return a - b; });
+    if (!days.length) return;
+    var emps = readEmployees_(), sched = readMonthNormalized_('schedule:' + ym, emps), closeMap = readCloseHours_(ym);
+    var m = Number(ym.slice(5, 7)), items = [];
+    emps.forEach(function (e) {
+      if (!e || e.deleted || !ids[String(e.id)]) return;
+      var rows = [], tot = 0;
+      days.forEach(function (d) {
+        var en = (sched[String(d)] || {})[e.id];
+        if (!en || en.off || !en.shifts || !en.shifts.length) return;
+        tot += netOfEntryAt_(en, closeMap, d);
+        rows.push(d);
+      });
+      var h = Math.round(tot * 10) / 10;
+      items.push({ w: String(e.id), tag: 'pub-' + ym, url: pushUrl_('go=shifts&ym=' + ym), tx: pushTx_(function (lg) {
+        var first = rows.slice(0, 2).map(function (d) { return pushDd_(ym, d, lg) + ' ' + pushShiftTxt_((sched[String(d)] || {})[e.id], closeMap, d, lg); }).join(' · ');
+        if (lg === 'ja') return ['📅 ' + m + '月のシフトが公開されました', rows.length ? rows.length + '日 · 合計' + h + 'h。' + first + (rows.length > 2 ? ' …' : '') : 'シフトはありません。'];
+        if (lg === 'en') return ['📅 Schedule for month ' + m + ' is out', rows.length ? rows.length + ' days · ' + h + 'h. ' + first + (rows.length > 2 ? ' …' : '') : 'No shifts for you.'];
+        return ['📅 Lịch tháng ' + m + ' đã công bố', rows.length ? rows.length + ' ngày · tổng ' + h + 'h. ' + first + (rows.length > 2 ? ' …' : '') : 'Bạn không có ca nào.'];
+      }) });
+    });
+    pushSend_(items);
+  } catch (e) {}
+}
+/** 📅 Nhân viên: ca đã công bố bị sửa (gộp sau 30 phút như thư). ch = [{ d, e, f: ca cũ, t: ca mới }] */
+function pushChange_(ym, ch) {
+  try {
+    var ids = pushStaffIds_(); if (!Object.keys(ids).length) return;
+    var byEmp = {}, closeMap = readCloseHours_(ym), m = Number(ym.slice(5, 7));
+    ch.forEach(function (c) { var k = String(c.e); if (ids[k]) (byEmp[k] = byEmp[k] || []).push(c); });
+    var items = Object.keys(byEmp).map(function (eid) {
+      var rows = byEmp[eid].slice().sort(function (a, b) { return a.d - b.d; });
+      return { w: eid, tag: 'chg-' + ym, urgent: true, url: pushUrl_('go=shifts&ym=' + ym), tx: pushTx_(function (lg) {
+        var lines = rows.slice(0, 3).map(function (c) { return pushDd_(ym, c.d, lg) + ' ' + pushShiftTxt_(c.f, closeMap, c.d, lg) + ' → ' + pushShiftTxt_(c.t, closeMap, c.d, lg); });
+        var more = rows.length > 3 ? '\n…+' + (rows.length - 3) : '';
+        if (lg === 'ja') return ['📅 シフトが変更されました', lines.join('\n') + more];
+        if (lg === 'en') return ['📅 Your shift changed', lines.join('\n') + more];
+        return ['📅 Ca của bạn vừa thay đổi', lines.join('\n') + more];
+      }) };
+    });
+    pushSend_(items);
+  } catch (e) {}
+}
+/** ⇄ Nhân viên: có người nhờ mình nhận ca. */
+function pushAsk_(ym, d, ownerId, askIds) {
+  try {
+    var ids = pushStaffIds_(), to = askIds.filter(function (x) { return ids[String(x)]; });
+    if (!to.length) return;
+    var owner = readEmployees_().filter(function (e) { return String(e.id) === String(ownerId); })[0] || {}, name = String(owner.name || '?');
+    pushSend_(to.map(function (eid) {
+      return { w: String(eid), tag: 'ask-' + ym + '-' + d + '-' + ownerId, urgent: true, url: pushUrl_('go=today&ym=' + ym), tx: pushTx_(function (lg) {
+        if (lg === 'ja') return ['⇄ シフト交代のお願い', name + 'さんが ' + pushDd_(ym, d, lg) + ' のシフトをお願いしています。'];
+        if (lg === 'en') return ['⇄ Shift swap request', name + ' asks you to take ' + pushDd_(ym, d, lg) + '.'];
+        return ['⇄ Có người nhờ nhận ca', name + ' nhờ bạn nhận ca ' + pushDd_(ym, d, lg) + '.'];
+      }) };
+    }));
+  } catch (e) {}
+}
+
+// ---------------------------------------------------------------------------
+// Nhắc hằng ngày (trình kích hoạt 19:00–20:00 giờ Nhật): ca ngày mai · hạn đăng ký lịch tháng sau
+// ---------------------------------------------------------------------------
+function ensurePushTrigger_(on) {
+  try {
+    var ts = ScriptApp.getProjectTriggers().filter(function (t) { return t.getHandlerFunction() === 'pushDailyTick'; });
+    if (on && !ts.length) ScriptApp.newTrigger('pushDailyTick').timeBased().atHour(19).everyDays(1).inTimezone('Asia/Tokyo').create();
+    if (!on) ts.forEach(function (t) { ScriptApp.deleteTrigger(t); });
+  } catch (e) {}
+}
+/** Ngày mai có nằm trong lịch chính thức không. Quán có dùng "Chốt & công bố" (tháng này hoặc tháng trước
+ *  đã từng chốt) thì chỉ nhắc ngày đã công bố — không nhắc theo bản nháp. */
+function pushDayFinal_(ym, d) {
+  var mode = readLockMode_(ym);
+  if (mode) return mode === 'all' || d <= HALF_SPLIT;
+  var prev = ymShift_(ym, -1);
+  return !readLockMode_(prev);
+}
+function pushDailyTick() {
+  var today = todayStr_();
+  try { if (props_().getProperty('PUSH_DAY') === today) return 'done'; props_().setProperty('PUSH_DAY', today); } catch (e0) { return 'err'; }
+  var o = pushRead_(), ids = pushStaffIds_();
+  if (!Object.keys(ids).length) return 'none';
+  var emps = readEmployees_().filter(function (e) { return e && !e.deleted && ids[String(e.id)]; });
+  var items = [];
+  // 1) ca ngày mai
+  try {
+    var tmr = jstDateStr_(1), ym = tmr.slice(0, 7), d = Number(tmr.slice(8, 10));
+    if (pushDayFinal_(ym, d)) {
+      var sched = readMonthNormalized_('schedule:' + ym, readEmployees_()), closeMap = readCloseHours_(ym);
+      emps.forEach(function (e) {
+        if (o.pref[String(e.id)] && o.pref[String(e.id)].tm === 0) return;
+        var en = (sched[String(d)] || {})[e.id];
+        if (!en || en.off || !en.shifts || !en.shifts.length) return;
+        items.push({ w: String(e.id), tag: 'tmr-' + tmr, url: pushUrl_('go=today&ym=' + ym), tx: pushTx_(function (lg) {
+          var tx = pushDd_(ym, d, lg) + ' ' + pushShiftTxt_(en, closeMap, d, lg);
+          if (lg === 'ja') return ['⏰ 明日のシフト', tx];
+          if (lg === 'en') return ['⏰ Tomorrow\'s shift', tx];
+          return ['⏰ Ca ngày mai', tx];
+        }) });
+      });
+    }
+  } catch (e1) {}
+  // 2) nhắc đăng ký lịch tháng sau: 3 ngày và 1 ngày trước hạn, chỉ người chưa khai ngày nào
+  try {
+    var reg = o.cfg.reg === undefined ? PUSH_REG_DAY : Number(o.cfg.reg) || 0, dom = Number(today.slice(8, 10));
+    if (reg && (dom === reg - 3 || dom === reg - 1)) {
+      var nx = ymShift_(today.slice(0, 7), 1), nm = Number(nx.slice(5, 7)), left = reg - dom;
+      var has = {};
+      [readJsonKey_('wish:' + nx), readJsonKey_('requests:' + nx)].forEach(function (mo) {
+        Object.keys(mo || {}).forEach(function (dd) { Object.keys(mo[dd] || {}).forEach(function (id) { has[id] = 1; }); });
+      });
+      emps.forEach(function (e) {
+        if (has[String(e.id)]) return;
+        if (Array.isArray(e.win) && e.win.some(function (x) { return !!x; })) return;      // có giờ cố định = đã tự đăng ký
+        items.push({ w: String(e.id), tag: 'reg-' + nx, url: pushUrl_('go=wish&ym=' + nx), tx: pushTx_(function (lg) {
+          if (lg === 'ja') return ['📝 ' + nm + '月のシフト希望を出してください', '締切は' + reg + '日（あと' + left + '日）。まだ1日も入力されていません。'];
+          if (lg === 'en') return ['📝 Please submit your month ' + nm + ' availability', 'Deadline: day ' + reg + ' (' + left + ' day' + (left > 1 ? 's' : '') + ' left).'];
+          return ['📝 Nhắc đăng ký lịch tháng ' + nm, 'Hạn chót ngày ' + reg + ' (còn ' + left + ' ngày). Bạn chưa đăng ký ngày nào.'];
+        }) });
+      });
+    }
+  } catch (e2) {}
+  var r = pushSend_(items);
+  return 'sent ' + r.sent;
+}
+
+// ===========================================================================
+// 🗄 KHOÁ SỔ CHẤM CÔNG + LƯU 7 NĂM (v47)
+// ---------------------------------------------------------------------------
+// Luật: 出勤簿・タイムカード giữ 5 năm (労基法109条, tạm thời 3 năm); dùng làm chứng từ thuế thì 7 năm.
+// App giữ 7 năm cho chắc. Cuối tháng quản lý sửa giờ thiếu → bấm "Khoá sổ" (chỉ tháng đã kết thúc):
+//   • xuất PDF (in nộp khi 労基署 kiểm tra) + CSV (Excel) vào Drive: "SUBWAY 勤怠記録（7年保存）/<quán>/<năm>/"
+//   • lưu mã SHA-256 của từng file → mở lại kiểm được file có bị sửa không
+//   • tháng đã khoá: không sửa được giờ điểm danh. Cần sửa → "Mở khoá" + lý do → sửa → khoá lại = BẢN 2
+//     (bản 1 vẫn giữ nguyên), mọi lần sửa / mở khoá được ghi nhật ký (cũng in vào PDF).
+// Khoá: 'attlock:YYYY-MM' = { v, open, at, until, files:[...], unlocks:[...] } · 'attlock:index' = [YYYY-MM…]
+//       'attlog:YYYY-MM'  = [{ at, k:'edit'|'punch'|'close'|'reopen', d, e, n, from, to, r, v }]
+// ===========================================================================
+var ATTARCH_ROOT = 'SUBWAY 勤怠記録（7年保存）', ATTARCH_YEARS = 7;
+function attLockGet_(ym) { var o = readJsonKey_('attlock:' + ym); return (o && typeof o === 'object' && !Array.isArray(o) && o.v) ? o : null; }
+function attLocked_(ym) { var o = attLockGet_(ym); return !!(o && !o.open); }
+function attCurYm_() { return attYmd_(Date.now()).slice(0, 7); }
+/** Ghi khoá theo kiểu đọc–sửa–ghi trong khoá script (đang giữ khoá sẵn thì không lồng). */
+function attKv_(key, fn) {
+  var lock = LockService.getScriptLock(), mine = false;
+  try { mine = lock.hasLock(); } catch (e0) {}
+  if (!mine && !lock.tryLock(LOCK_WAIT_MS)) throw new Error('Hệ thống đang bận, vui lòng thử lại sau ít giây.');
+  try {
+    var sheet = getSheet_(), cur = readMonthObject_(sheet, key), r = fn(cur);
+    pubPut_(sheet, key, r);
+    return r;
+  } finally { if (!mine) lock.releaseLock(); }
+}
+function attLog_(ym, entry) {
+  try {
+    entry.at = entry.at || Date.now();
+    attKv_('attlog:' + ym, function (cur) { cur = Array.isArray(cur) ? cur : []; cur.push(entry); return cur.slice(-3000); });
+  } catch (e) { console.warn('attLog_: ' + e); }
+}
+function attEmpMap_() {
+  var m = {}, sc = '';
+  try { sc = storeCode_(); } catch (e) {}
+  readEmployees_().forEach(function (e) { m[e.id] = { name: e.name, code: e.code ? (sc ? sc + '-' : '') + e.code : '', del: !!e.deleted }; });
+  return m;
+}
+function attHmS_(t) { var d = attJst_(t); return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }
+/** Bảng dữ liệu tháng: mỗi người · mỗi ngày một dòng (vào đầu, về cuối, tổng nghỉ, thực làm, chi tiết, có sửa tay không). */
+function attMonthRows_(ym) {
+  var raw = readJsonKey_('att:' + ym) || {}, em = attEmpMap_(), by = {};
+  Object.keys(raw).forEach(function (d) {
+    Object.keys(raw[d] || {}).forEach(function (id) {
+      var l = (raw[d][id] || []).slice().sort(function (a, b) { return a.t - b.t; });
+      if (!l.length) return;
+      var brk = 0, bs = null, ins = l.filter(function (p) { return p.k === 'in'; }), outs = l.filter(function (p) { return p.k === 'out'; });
+      l.forEach(function (p) { if (p.k === 'bs') bs = p.t; else if ((p.k === 'be' || p.k === 'out') && bs != null) { brk += p.t - bs; bs = null; } });
+      var work = attWorkHours_(l, null), y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)), dd = Number(d);
+      (by[id] = by[id] || []).push({
+        d: dd, dow: '日月火水木金土'.charAt(new Date(Date.UTC(y, m - 1, dd)).getUTCDay()),
+        inT: ins.length ? attHmS_(ins[0].t) : '', outT: outs.length ? attHmS_(outs[outs.length - 1].t) : '',
+        brk: Math.round(brk / 60000), work: work, open: l[l.length - 1].k !== 'out',
+        man: l.some(function (p) { return p.s === 'm'; }),
+        det: l.map(function (p) { return ATT_KIND_JA_[p.k] + ' ' + attHmS_(p.t) + (p.s === 'm' ? '*' : ''); }).join(' / ')
+      });
+    });
+  });
+  var out = Object.keys(by).map(function (id) {
+    var rows = by[id].sort(function (a, b) { return a.d - b.d; }), tot = 0;
+    rows.forEach(function (r) { tot += r.work; });
+    var e = em[id] || { name: id, code: '' };
+    return { id: id, name: e.name, code: e.code, rows: rows, days: rows.length, hours: Math.round(tot * 100) / 100 };
+  });
+  out.sort(function (a, b) { return String(a.code || 'zz' + a.name).localeCompare(String(b.code || 'zz' + b.name)); });
+  return out;
+}
+function attHmDur_(h) { var mi = Math.round((Number(h) || 0) * 60); return Math.floor(mi / 60) + ':' + ('0' + (mi % 60)).slice(-2); }
+function attCsv_(ym, emps) {
+  var esc = function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  var lines = [['年月', '日', '曜日', '社員コード', '氏名', '出勤', '退勤', '休憩(分)', '実働(時:分)', '実働(時間)', '手修正', '打刻明細'].join(',')];
+  emps.forEach(function (E) {
+    E.rows.forEach(function (r) {
+      lines.push([ym, r.d, r.dow, E.code, E.name, r.inT, r.outT, r.brk, attHmDur_(r.work), r.work, r.man ? '有' : '', r.det].map(esc).join(','));
+    });
+  });
+  return '﻿' + lines.join('\r\n') + '\r\n';
+}
+function attPdfHtml_(ym, emps, info, logs) {
+  var h = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)), store = storeLabel_();
+  var css = '@page{size:A4 portrait;margin:12mm}body{font-family:"Noto Sans JP","Hiragino Sans",Arial,sans-serif;font-size:9pt;color:#111}' +
+    'h1{font-size:14pt;margin:0 0 2mm}.meta{font-size:8pt;color:#444;margin-bottom:4mm}.emp{page-break-inside:avoid;margin:0 0 5mm}' +
+    'h2{font-size:10.5pt;margin:0 0 1.5mm;border-bottom:0.3mm solid #111;padding-bottom:1mm}h2 small{font-weight:400;color:#444}' +
+    'table{width:100%;border-collapse:collapse}th,td{border:0.2mm solid #888;padding:0.8mm 1.2mm;text-align:center}th{background:#EEE}' +
+    'td.det{text-align:left;font-size:7.5pt;color:#333}tr.tot td{font-weight:700;background:#F4F4F4}.man{color:#B00}.foot{margin-top:4mm;font-size:7.5pt;color:#444}' +
+    '.log{page-break-before:always}.log td{text-align:left;font-size:8pt}';
+  var out = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + h('勤怠記録 ' + ym) + '</title><style>' + css + '</style></head><body>' +
+    '<h1>勤怠記録（出勤簿） ' + y + '年' + m + '月</h1><div class="meta">' + h(store) + ' · 第' + info.v + '版 · 確定 ' + h(info.atTxt) +
+    ' · 対象 ' + emps.length + '名 · 保存期限 ' + h(info.untilTxt) + '</div>';
+  if (!emps.length) out += '<p>この月の打刻記録はありません。</p>';
+  emps.forEach(function (E) {
+    out += '<div class="emp"><h2>' + h(E.name) + (E.code ? ' <small>' + h(E.code) + '</small>' : '') + ' <small>· ' + E.days + '日 · 実働 ' + attHmDur_(E.hours) + '</small></h2>' +
+      '<table><tr><th style="width:11mm">日</th><th style="width:8mm">曜</th><th style="width:15mm">出勤</th><th style="width:15mm">退勤</th><th style="width:15mm">休憩</th><th style="width:16mm">実働</th><th>打刻明細（*＝手修正）</th></tr>' +
+      E.rows.map(function (r) {
+        return '<tr><td>' + r.d + '</td><td>' + r.dow + '</td><td>' + h(r.inT) + '</td><td>' + h(r.outT || (r.open ? '未退勤' : '')) + '</td><td>' + (r.brk ? r.brk + '分' : '') + '</td><td>' + attHmDur_(r.work) +
+          '</td><td class="det' + (r.man ? ' man' : '') + '">' + h(r.det) + '</td></tr>';
+      }).join('') + '<tr class="tot"><td colspan="5">合計</td><td>' + attHmDur_(E.hours) + '</td><td class="det">' + E.days + '日</td></tr></table></div>';
+  });
+  if (logs.length) {
+    out += '<div class="log"><h2>修正・確定の履歴</h2><table><tr><th style="width:30mm">日時</th><th style="width:22mm">区分</th><th>内容</th></tr>' +
+      logs.map(function (L) {
+        var when = Utilities.formatDate(new Date(L.at), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm');
+        var kind = { edit: '手修正', punch: '確定後の打刻', close: '確定', reopen: '確定解除' }[L.k] || L.k;
+        var txt = L.k === 'edit' || L.k === 'punch'
+          ? (L.n || L.e || '') + ' ' + m + '/' + L.d + '：' + attLogList_(L.from) + ' → ' + attLogList_(L.to) + (L.r ? '（理由：' + L.r + '）' : '')
+          : (L.k === 'close' ? '第' + L.v + '版を確定' : '理由：' + (L.r || '')) + (L.k === 'close' && L.r ? '（' + L.r + '）' : '');
+        return '<tr><td>' + h(when) + '</td><td>' + h(kind) + '</td><td>' + h(txt) + '</td></tr>';
+      }).join('') + '</table></div>';
+  }
+  out += '<div class="foot">この記録はシフトアプリの打刻データから自動作成されました。CSV版と同じ内容です。改ざん確認用ハッシュ（SHA-256）はアプリの「勤怠の保存」で確認できます。</div></body></html>';
+  return out;
+}
+function attLogList_(l) { return (l && l.length) ? l.map(function (p) { return ATT_KIND_JA_[p.k] + attHmS_(p.t); }).join('・') : '（なし）'; }
+function attSha_(bytes) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes).map(function (b) { b = b < 0 ? b + 256 : b; return (b < 16 ? '0' : '') + b.toString(16); }).join('');
+}
+function attArchFolder_(year) {
+  var p = props_(), id = p.getProperty('ATTARCH_FOLDER'), store = null;
+  if (id) { try { store = DriveApp.getFolderById(id); if (store.isTrashed && store.isTrashed()) store = null; } catch (e) { store = null; } }
+  if (!store) {
+    var it = DriveApp.getFoldersByName(ATTARCH_ROOT), root = it.hasNext() ? it.next() : DriveApp.createFolder(ATTARCH_ROOT);
+    var nm = storeLabel_(), it2 = root.getFoldersByName(nm);
+    store = it2.hasNext() ? it2.next() : root.createFolder(nm);
+    p.setProperty('ATTARCH_FOLDER', store.getId());
+  }
+  var it3 = store.getFoldersByName(String(year));
+  return { store: store, year: it3.hasNext() ? it3.next() : store.createFolder(String(year)) };
+}
+
+/** Khoá sổ một tháng đã kết thúc: xuất PDF + CSV, lưu mã SHA-256, chặn sửa. note: ghi chú (tuỳ chọn). */
+function attClose(token, ym, note) {
+  requireManager_(token);
+  ym = attYm_(ym);
+  if (ym >= attCurYm_()) throw new Error('Tháng ' + ym + ' chưa kết thúc — chỉ khoá sổ được từ ngày 1 tháng sau.');
+  var cur = attLockGet_(ym);
+  if (cur && !cur.open) throw new Error('Tháng ' + ym + ' đã khoá sổ (bản ' + cur.v + ').');
+  var v = cur ? cur.v + 1 : 1, now = Date.now(), until = new Date(now); until.setFullYear(until.getFullYear() + ATTARCH_YEARS);
+  var emps = attMonthRows_(ym), logs = (readJsonKey_('attlog:' + ym) || []);
+  logs = Array.isArray(logs) ? logs.slice() : [];
+  logs.push({ at: now, k: 'close', v: v, r: String(note || '').slice(0, 200) });
+  var info = { v: v, atTxt: Utilities.formatDate(new Date(now), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm'), untilTxt: Utilities.formatDate(until, 'Asia/Tokyo', 'yyyy/MM/dd') };
+  var stamp = Utilities.formatDate(new Date(now), 'Asia/Tokyo', 'yyyyMMdd-HHmm'), slug = String(storeLabel_()).replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'SUBWAY';
+  var base = '勤怠_' + ym + '_' + slug + '_第' + v + '版_' + stamp;
+  var csvBlob = Utilities.newBlob(attCsv_(ym, emps), 'text/csv', base + '.csv');
+  var pdfBlob = Utilities.newBlob(attPdfHtml_(ym, emps, info, logs), 'text/html', base + '.html').getAs('application/pdf').setName(base + '.pdf');
+  var hCsv = attSha_(csvBlob.getBytes()), hPdf = attSha_(pdfBlob.getBytes());
+  var F = attArchFolder_(ym.slice(0, 4));
+  var fCsv = F.year.createFile(csvBlob), fPdf = F.year.createFile(pdfBlob);
+  var desc = '勤怠記録 ' + ym + ' 第' + v + '版 · 保存期限 ' + info.untilTxt + ' · SHA-256 ';
+  try { fCsv.setDescription(desc + hCsv); fPdf.setDescription(desc + hPdf); } catch (eD) {}
+  var tot = 0; emps.forEach(function (E) { tot += E.hours; });
+  var fileRec = { v: v, at: now, until: until.getTime(), csv: { id: fCsv.getId(), name: fCsv.getName(), sha: hCsv }, pdf: { id: fPdf.getId(), name: fPdf.getName(), sha: hPdf },
+                  n: emps.length, rows: emps.reduce(function (a, E) { return a + E.rows.length; }, 0), hours: Math.round(tot * 100) / 100, note: String(note || '').slice(0, 200) };
+  var res = attKv_('attlock:' + ym, function (o) {
+    o = (o && typeof o === 'object' && !Array.isArray(o)) ? o : {};
+    o.files = Array.isArray(o.files) ? o.files : []; o.unlocks = Array.isArray(o.unlocks) ? o.unlocks : [];
+    o.files.push(fileRec); o.v = v; o.open = false; o.at = now; o.until = until.getTime();
+    return o;
+  });
+  attKv_('attlock:index', function (a) { a = Array.isArray(a) ? a : []; if (a.indexOf(ym) === -1) a.push(ym); return a.sort(); });
+  attLog_(ym, { at: now, k: 'close', v: v, r: fileRec.note });
+  try { props_().setProperty('ATTARCH_URL', F.store.getUrl()); } catch (eU) {}
+  return attLockOut_(ym, res);
+}
+/** Mở khoá để sửa tiếp (bắt buộc ghi lý do). Bản đã lưu giữ nguyên; khoá lại sẽ thành bản mới. */
+function attReopen(token, ym, reason) {
+  requireManager_(token);
+  ym = attYm_(ym);
+  var r = String(reason == null ? '' : reason).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200);
+  if (r.length < 4) throw new Error('Hãy ghi lý do mở khoá (ít nhất 4 ký tự) — lý do được lưu vào sổ.');
+  var cur = attLockGet_(ym);
+  if (!cur || cur.open) throw new Error('Tháng này chưa khoá sổ.');
+  var res = attKv_('attlock:' + ym, function (o) { o.open = true; o.unlocks = Array.isArray(o.unlocks) ? o.unlocks : []; o.unlocks.push({ at: Date.now(), r: r, v: o.v }); return o; });
+  attLog_(ym, { k: 'reopen', v: cur.v, r: r });
+  return attLockOut_(ym, res);
+}
+function attLockOut_(ym, o) {
+  o = o || attLockGet_(ym);
+  if (!o) return { ym: ym, v: 0, open: false, locked: false, files: [] };
+  return { ym: ym, v: o.v, open: !!o.open, locked: !o.open, at: o.at, until: o.until, unlocks: o.unlocks || [],
+           files: (o.files || []).map(function (f) { return { v: f.v, at: f.at, until: f.until, n: f.n, rows: f.rows, hours: f.hours, note: f.note || '', pdf: f.pdf.name, csv: f.csv.name, shaPdf: f.pdf.sha, shaCsv: f.csv.sha }; }) };
+}
+/** Chạy MỘT LẦN trong trình soạn Apps Script (chọn hàm này → ▶ Chạy) để cấp quyền Google Drive cho kho lưu chấm công 7 năm. */
+function capQuyenDrive() {
+  var it = DriveApp.getFoldersByName(ATTARCH_ROOT), f = it.hasNext() ? it.next() : DriveApp.createFolder(ATTARCH_ROOT);
+  Logger.log('OK — thư mục lưu chấm công: ' + f.getUrl());
+  return f.getUrl();
+}
+/** Danh sách tháng đã lưu (mới nhất trước) + link thư mục Drive. */
+function attArchive(token) {
+  requireManager_(token);
+  var idx = readJsonKey_('attlock:index'), now = Date.now();
+  idx = Array.isArray(idx) ? idx.slice().sort().reverse() : [];
+  return { folder: props_().getProperty('ATTARCH_URL') || '', years: ATTARCH_YEARS, cur: attCurYm_(),
+           list: idx.map(function (ym) { var o = attLockOut_(ym); o.expired = !!(o.until && o.until < now); return o; }) };
+}
+/** Tải một file đã lưu (b64) + kiểm mã SHA-256 xem file trong Drive còn nguyên vẹn không. */
+function attArchiveGet(token, ym, v, kind) {
+  requireManager_(token);
+  ym = attYm_(ym);
+  var o = attLockGet_(ym); if (!o) throw new Error('Tháng này chưa khoá sổ.');
+  var f = (o.files || []).filter(function (x) { return x.v === Number(v); })[0]; if (!f) throw new Error('Không có bản này.');
+  var rec = kind === 'csv' ? f.csv : f.pdf, file;
+  try { file = DriveApp.getFileById(rec.id); } catch (e) { throw new Error('Không mở được file trong Drive (đã bị xoá hoặc chuyển quyền?): ' + rec.name); }
+  var bytes = file.getBlob().getBytes(), sha = attSha_(bytes);
+  return { name: rec.name, b64: Utilities.base64Encode(bytes), type: kind === 'csv' ? 'text/csv' : 'application/pdf', ok: sha === rec.sha, sha: sha, want: rec.sha, url: file.getUrl() };
+}
+/** Nhật ký sửa / khoá / mở khoá của một tháng. */
+function attLogGet(token, ym) {
+  requireManager_(token);
+  ym = attYm_(ym);
+  var l = readJsonKey_('attlog:' + ym), em = attEmpMap_();
+  l = Array.isArray(l) ? l : [];
+  return l.slice(-500).reverse().map(function (x) { var c = JSON.parse(JSON.stringify(x)); if (c.e && !c.n) c.n = (em[c.e] || {}).name || c.e; return c; });
+}
+
+// ===========================================================================
+// 📋 ĐÀO TẠO NHÂN VIÊN MỚI (v47) — checklist các việc nhân viên SUBWAY phải học
+// ---------------------------------------------------------------------------
+// 'train' = { tpl: { groups: [{ id, t:{ja,vi,en}, items: [{ id, t:{ja,vi,en} }] }], at },
+//             emp: { empId: { open, at, by, items: { itemId: { s: lúc NV tự tick, c: lúc xác nhận, cb: người xác nhận, n: ghi chú } }, done } } }
+// Quản lý "mở yêu cầu" cho một nhân viên → nhân viên thấy checklist trong app, tự tick "đã làm được";
+// quản lý / người đào tạo bấm xác nhận (kèm tên + ngày). Quản lý tick hộ được. Đóng yêu cầu = ẩn với nhân viên, giữ tiến độ.
+// ===========================================================================
+function trainTx_(ja, vi, en) { return { ja: ja, vi: vi, en: en || vi }; }
+function trainDefaultTpl_() {
+  var G = function (id, ja, vi, en, items) { return { id: id, t: trainTx_(ja, vi, en), items: items.map(function (x, i) { return { id: id + (i + 1), t: trainTx_(x[0], x[1], x[2]) }; }) }; };
+  return { at: Date.now(), groups: [
+    G('g1', '基本・衛生', 'Cơ bản & vệ sinh', 'Basics & hygiene', [
+      ['身だしなみ（制服・帽子・爪・アクセサリー）', 'Tác phong (đồng phục, mũ, móng tay, không đeo trang sức)', 'Uniform, cap, nails, no jewellery'],
+      ['正しい手洗い（30秒・決められたタイミング）', 'Rửa tay đúng cách (30 giây, đúng thời điểm quy định)', 'Correct handwashing (30 s, required times)'],
+      ['手袋の着用・交換ルール', 'Quy tắc đeo và thay găng tay', 'Glove use and change rules'],
+      ['体調不良時の報告（体調チェック）', 'Báo khi không khoẻ (khai sức khoẻ)', 'Reporting when unwell (health check)'],
+      ['温度管理（冷蔵・冷凍・保温）と記録', 'Kiểm soát nhiệt độ (lạnh, đông, giữ nóng) và ghi chép', 'Temperature control (chilled, frozen, hot) and logs'],
+      ['消費期限ラベル（デイドット）の付け方・確認', 'Dán và kiểm tra nhãn hạn dùng (day-dot)', 'Shelf-life labels (day dots)'],
+      ['交差汚染の防止（色分け・置き場所）', 'Chống nhiễm chéo (phân màu, chỗ để)', 'Preventing cross-contamination'],
+      ['アレルギー対応の基本', 'Kiến thức cơ bản về dị ứng thực phẩm', 'Allergen basics']]),
+    G('g2', 'パン', 'Bánh mì', 'Bread', [
+      ['冷凍パンの解凍（スロー解凍）', 'Rã đông bánh (rã đông chậm)', 'Thawing frozen dough'],
+      ['プルーフ（発酵）の設定と見極め', 'Ủ bột (cài đặt và nhận biết đủ độ)', 'Proofing settings and checks'],
+      ['焼成（オーブン設定・時間）', 'Nướng bánh (cài lò, thời gian)', 'Baking (oven settings, time)'],
+      ['トッピング（チーズ・シード等）', 'Rắc topping (phô mai, hạt…)', 'Toppings (cheese, seeds)'],
+      ['焼き上がりの品質チェック・時間管理', 'Kiểm tra chất lượng bánh và quản lý thời gian', 'Bake quality and hold times']]),
+    G('g3', '仕込み', 'Chuẩn bị nguyên liệu', 'Prep', [
+      ['野菜のカット・計量', 'Cắt và cân rau', 'Cutting and weighing vegetables'],
+      ['肉・チーズの準備', 'Chuẩn bị thịt và phô mai', 'Preparing meats and cheese'],
+      ['ソース・ドレッシングの補充', 'Bổ sung sốt / dressing', 'Refilling sauces'],
+      ['ラインの準備（配置・量）', 'Chuẩn bị quầy line (vị trí, số lượng)', 'Setting up the line'],
+      ['先入れ先出し（FIFO）', 'Nhập trước dùng trước (FIFO)', 'First in, first out (FIFO)']]),
+    G('g4', 'サンドイッチ作り', 'Làm sandwich', 'Making sandwiches', [
+      ['お客様への声かけ・注文の聞き方', 'Chào khách và cách nhận order', 'Greeting and taking the order'],
+      ['パンの選択・カット', 'Chọn bánh và cắt bánh', 'Bread choice and cutting'],
+      ['具材の規定量（ポーション）', 'Định lượng nhân đúng chuẩn', 'Correct portions'],
+      ['トースト', 'Nướng (toast)', 'Toasting'],
+      ['野菜・ソースのトッピング', 'Thêm rau và sốt', 'Vegetables and sauces'],
+      ['包装・カット・提供', 'Gói, cắt và đưa cho khách', 'Wrapping, cutting, serving'],
+      ['サラダ・ラップ', 'Salad và wrap', 'Salads and wraps'],
+      ['スピード目標の達成', 'Đạt tốc độ mục tiêu', 'Meeting speed targets']]),
+    G('g5', 'レジ・接客', 'Quầy thu ngân & tiếp khách', 'Register & service', [
+      ['レジ操作（会計・取消・返金）', 'Thao tác máy tính tiền (thanh toán, huỷ, hoàn tiền)', 'POS (payment, void, refund)'],
+      ['支払い方法（現金・カード・電子マネー・QR）', 'Các cách thanh toán (tiền mặt, thẻ, ví điện tử, QR)', 'Payment methods'],
+      ['クーポン・アプリ・ポイント対応', 'Xử lý coupon, app, điểm thưởng', 'Coupons, app, points'],
+      ['モバイルオーダー・デリバリー対応', 'Đơn đặt qua app / giao hàng', 'Mobile orders and delivery'],
+      ['クレーム対応と店長への報告', 'Xử lý phàn nàn và báo quản lý', 'Handling complaints and reporting']]),
+    G('g6', '清掃・閉店', 'Dọn dẹp & đóng cửa', 'Cleaning & closing', [
+      ['毎時の清掃（客席・トイレ・店外）', 'Dọn mỗi giờ (bàn khách, nhà vệ sinh, trước quán)', 'Hourly cleaning'],
+      ['器具の洗浄・消毒', 'Rửa và khử trùng dụng cụ', 'Washing and sanitising tools'],
+      ['閉店作業（ライン片付け・廃棄記録）', 'Việc đóng cửa (dọn line, ghi hàng huỷ)', 'Closing tasks and waste log'],
+      ['ゴミ出し・分別', 'Đổ rác và phân loại', 'Rubbish and sorting'],
+      ['戸締り・セキュリティ', 'Khoá cửa và an ninh', 'Locking up and security']]),
+    G('g7', '安全・緊急時', 'An toàn & khẩn cấp', 'Safety & emergencies', [
+      ['包丁・スライサーの安全な使い方', 'Dùng dao và máy thái an toàn', 'Safe use of knives and slicer'],
+      ['火傷・ケガの防止と応急処置', 'Phòng bỏng, bị thương và sơ cứu', 'Burns, injuries and first aid'],
+      ['緊急連絡先・避難経路・消火器の位置', 'Số liên lạc khẩn cấp, lối thoát hiểm, vị trí bình chữa cháy', 'Emergency contacts, exits, extinguisher']])
+  ] };
+}
+function trainRead_() {
+  var o = readJsonKey_('train');
+  if (!o || typeof o !== 'object' || Array.isArray(o)) o = {};
+  if (!o.tpl || !Array.isArray(o.tpl.groups)) o.tpl = trainDefaultTpl_();
+  if (!o.emp || typeof o.emp !== 'object') o.emp = {};
+  return o;
+}
+function trainEdit_(fn) {
+  return attKv_('train', function (o) {
+    o = (o && typeof o === 'object' && !Array.isArray(o)) ? o : {};
+    if (!o.tpl || !Array.isArray(o.tpl.groups)) o.tpl = trainDefaultTpl_();
+    if (!o.emp || typeof o.emp !== 'object') o.emp = {};
+    fn(o);
+    return o;
+  });
+}
+function trainItemIds_(tpl) { var a = []; tpl.groups.forEach(function (g) { (g.items || []).forEach(function (it) { a.push(it.id); }); }); return a; }
+function trainSum_(tpl, rec) {
+  var ids = trainItemIds_(tpl), s = 0, c = 0, items = (rec && rec.items) || {};
+  ids.forEach(function (id) { var x = items[id]; if (x && (x.s || x.c)) s++; if (x && x.c) c++; });
+  return { n: ids.length, s: s, c: c };
+}
+/** Mẫu checklist + phần của một người (nhân viên chỉ xem được của mình, và chỉ khi quản lý đã mở yêu cầu). */
+function trainState(token, empId) {
+  var p = requireCanEdit_(token, empId), o = trainRead_(), rec = o.emp[String(empId)] || null;
+  if (p.r !== 'mgr' && !(rec && rec.open)) return { tpl: o.tpl, rec: null, open: false };
+  return { tpl: o.tpl, rec: rec, open: !!(rec && rec.open), sum: trainSum_(o.tpl, rec) };
+}
+/** Quản lý: tiến độ của mọi người đã từng mở. */
+function trainList(token) {
+  requireManager_(token);
+  var o = trainRead_(), names = {};
+  readEmployees_().forEach(function (e) { names[e.id] = e.name; });
+  return { tpl: o.tpl, list: Object.keys(o.emp).filter(function (id) { return names[id]; }).map(function (id) {
+    var r = o.emp[id]; return { id: id, name: names[id], open: !!r.open, at: r.at || 0, done: r.done || 0, sum: trainSum_(o.tpl, r) };
+  }).sort(function (a, b) { return (b.open - a.open) || (b.at - a.at); }) };
+}
+/** Quản lý: lưu mẫu (thêm / sửa / xoá nhóm và mục). Mục bị xoá thì tiến độ cũ của mục đó không còn tính. */
+function trainTplSave(token, json) {
+  requireManager_(token);
+  var g; try { g = typeof json === 'string' ? JSON.parse(json) : json; } catch (e) { g = null; }
+  if (!g || !Array.isArray(g.groups) || g.groups.length > 30) throw new Error('Dữ liệu không hợp lệ.');
+  var clean = function (t) { var o = {}; ['ja', 'vi', 'en'].forEach(function (k) { var v = String((t && t[k]) || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 120); if (v) o[k] = v; }); return o; };
+  var seen = {}, uid = function (pre, id) { id = String(id || ''); if (!/^[a-z0-9]{1,16}$/.test(id) || seen[id]) id = pre + Utilities.getUuid().replace(/-/g, '').slice(0, 8); seen[id] = 1; return id; };
+  var groups = g.groups.map(function (x) {
+    var t = clean(x.t); if (!t.ja && !t.vi && !t.en) return null;
+    var items = (Array.isArray(x.items) ? x.items : []).slice(0, 60).map(function (it) { var tt = clean(it.t); return (tt.ja || tt.vi || tt.en) ? { id: uid('i', it.id), t: tt } : null; }).filter(Boolean);
+    return { id: uid('g', x.id), t: t, items: items };
+  }).filter(Boolean);
+  var res = trainEdit_(function (o) { o.tpl = { groups: groups, at: Date.now() }; });
+  return { tpl: res.tpl };
+}
+/** Quản lý mở / đóng yêu cầu đào tạo cho một nhân viên (mở = nhân viên thấy checklist + nhận thông báo). */
+function trainOpen(token, empId, on) {
+  requireManager_(token);
+  empId = String(empId || '');
+  var emp = readEmployees_().filter(function (e) { return e.id === empId; })[0];
+  if (!emp) throw new Error('Không tìm thấy nhân viên này.');
+  var wasOpen = false;
+  var res = trainEdit_(function (o) {
+    var r = o.emp[empId] || (o.emp[empId] = { items: {} });
+    wasOpen = !!r.open; r.open = !!on;
+    if (on && !r.at) r.at = Date.now();
+  });
+  if (on && !wasOpen) {
+    try {
+      pushSend_([{ w: empId, tag: 'train', url: pushUrl_('go=today'), tx: pushTx_(function (lg) {
+        if (lg === 'ja') return ['📋 研修チェックリストが届きました', '覚えた項目にチェックを入れてください。店長が確認します。'];
+        if (lg === 'en') return ['📋 Your training checklist is open', 'Tick the tasks you can do — the manager will confirm.'];
+        return ['📋 Checklist đào tạo đã mở', 'Tick những việc bạn đã làm được — quản lý sẽ xác nhận.'];
+      }) }]);
+    } catch (e) {}
+  }
+  return trainState(token, empId);
+}
+/** Tick một mục. Nhân viên: chỉ "đã làm được" của mình (khi yêu cầu đang mở, mục chưa được xác nhận).
+ *  Quản lý: mode 's' = tick hộ phần nhân viên · 'c' = xác nhận (kèm người xác nhận `by`) · on=false bỏ tick. */
+function trainTick(token, empId, itemId, on, mode, by, note) {
+  var p = requireCanEdit_(token, empId);
+  empId = String(empId || ''); itemId = String(itemId || '');
+  var o0 = trainRead_();
+  if (trainItemIds_(o0.tpl).indexOf(itemId) === -1) throw new Error('Mục này không còn trong checklist.');
+  var mgr = p.r === 'mgr', allSelf = false, name = '';
+  readEmployees_().forEach(function (e) { if (e.id === empId) name = e.name; });
+  var res = trainEdit_(function (o) {
+    var r = o.emp[empId];
+    if (!mgr && !(r && r.open)) throw new Error('Quản lý chưa mở checklist đào tạo cho bạn.');
+    if (!r) r = o.emp[empId] = { items: {}, at: Date.now() };
+    r.items = r.items || {};
+    var x = r.items[itemId] || {};
+    if (!mgr || mode !== 'c') {
+      if (!mgr && x.c && !on) throw new Error('Mục này quản lý đã xác nhận — không bỏ tick được.');
+      if (mgr && on && !x.s) x.sm = 1;             // quản lý tick hộ (NV đã tự tick thì giữ là của NV)
+      if (on) x.s = x.s || Date.now(); else { delete x.s; delete x.sm; if (mgr) { delete x.c; delete x.cb; } }
+    } else {
+      if (on) { x.c = Date.now(); x.cb = String(by || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 30) || 'Quản lý'; x.s = x.s || x.c; }
+      else { delete x.c; delete x.cb; }
+    }
+    if (note !== undefined && mgr) { var nn = String(note || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 120); if (nn) x.n = nn; else delete x.n; }
+    if (x.s || x.c || x.n) r.items[itemId] = x; else delete r.items[itemId];
+    var S = trainSum_(o.tpl, r);
+    if (S.n && S.c === S.n) r.done = r.done || Date.now(); else delete r.done;
+    allSelf = !mgr && on && S.n && S.s === S.n && S.c < S.n;
+  });
+  if (allSelf) { try { mgrEvent_('train', empId, '', 0, ''); } catch (e) {} }    // NV tick đủ → báo quản lý vào xác nhận
+  return { rec: res.emp[empId], sum: trainSum_(res.tpl, res.emp[empId]) };
+}
+
+// ===========================================================================
+// ⏰ CHECKLIST THEO KHUNG GIỜ CỦA QUÁN (v48) — nằm trong "Việc hôm nay"
+// ---------------------------------------------------------------------------
+// 'hk:tpl'     = { slots: [{ id, at:'07:30', t:{ja,vi,en}, items: [{ id, t:{ja,vi,en} }] }], at }  — mỗi quán một mẫu riêng
+// 'hk:YYYY-MM' = { 'DD': { itemId: { at, by: empId | 'm', n: tên người tick } } }
+// Nhân viên tick trong app (hôm nay / hôm qua — việc đóng cửa qua nửa đêm), chỉ bỏ được tick của chính mình.
+// Quản lý tick hộ / bỏ tick mọi ngày, sửa mẫu. In / PDF làm hồ sơ vệ sinh (衛生管理記録).
+// ===========================================================================
+function hkTx_(ja, vi, en) { return { ja: ja, vi: vi, en: en || vi }; }
+function hkDefaultTpl_() {
+  var S = function (id, at, ja, vi, en, items) { return { id: id, at: at, t: hkTx_(ja, vi, en), items: items.map(function (x, i) { return { id: id + (i + 1), t: hkTx_(x[0], x[1], x[2]) }; }) }; };
+  return { at: Date.now(), slots: [
+    S('h1', '07:30', '開店前', 'Trước giờ mở cửa', 'Before opening', [
+      ['冷蔵庫・冷凍庫の温度を確認・記録', 'Đo nhiệt độ tủ lạnh / tủ đông và ghi lại', 'Check & record fridge / freezer temperatures'],
+      ['オーブン・ウォーマーの電源を入れる', 'Bật lò nướng và tủ giữ nóng', 'Turn on the oven and warmers'],
+      ['手洗い場（石けん・アルコール・ペーパー）を補充', 'Bổ sung bồn rửa tay (xà phòng, cồn, khăn giấy)', 'Restock the hand-wash station (soap, sanitiser, towels)'],
+      ['食材の期限ラベル（デイドット）を確認', 'Kiểm tra nhãn hạn dùng nguyên liệu (day-dot)', 'Check ingredient day-dot labels'],
+      ['ライン（野菜・肉・ソース）を準備', 'Bày line (rau, thịt, sốt)', 'Set up the line (veg, meat, sauces)'],
+      ['パンを焼く（開店分）', 'Nướng bánh cho đầu ngày', 'Bake bread for opening'],
+      ['客席・カウンター・入口を清掃', 'Lau bàn khách, quầy và cửa ra vào', 'Clean tables, counter and entrance'],
+      ['レジの釣銭を確認', 'Kiểm tra tiền lẻ quầy thu ngân', 'Check the till float']]),
+    S('h2', '11:00', 'ランチ前', 'Trước cao điểm trưa', 'Before lunch peak', [
+      ['ラインの食材を補充', 'Bổ sung nguyên liệu trên line', 'Restock the line'],
+      ['サンドイッチユニットの温度を確認', 'Kiểm tra nhiệt độ line lạnh', 'Check the sandwich unit temperature'],
+      ['予測に合わせてパンを追加で焼く', 'Nướng thêm bánh theo dự báo', 'Bake extra bread to forecast'],
+      ['ダスター・消毒液を交換', 'Thay khăn lau và nước sát khuẩn', 'Change cloths and sanitiser']]),
+    S('h3', '14:00', 'ランチ後', 'Sau cao điểm trưa', 'After lunch peak', [
+      ['客席・床を清掃', 'Lau bàn khách và sàn khu khách', 'Clean tables and the dining floor'],
+      ['ゴミを捨てる', 'Đổ rác', 'Empty the bins'],
+      ['ラインの期限・状態を確認、パンを入れ替え', 'Kiểm tra hạn dùng / tình trạng trên line, thay khay', 'Check line dates and condition, swap pans'],
+      ['冷蔵庫・冷凍庫の温度を確認・記録', 'Đo nhiệt độ tủ lạnh / tủ đông và ghi lại', 'Check & record fridge / freezer temperatures'],
+      ['器具を洗浄', 'Rửa dụng cụ', 'Wash utensils']]),
+    S('h4', '17:00', 'ディナー前', 'Trước cao điểm tối', 'Before dinner peak', [
+      ['ラインの食材を補充・パンを焼く', 'Bổ sung nguyên liệu, nướng bánh', 'Restock and bake bread'],
+      ['サンドイッチユニットの温度を確認', 'Kiểm tra nhiệt độ line lạnh', 'Check the sandwich unit temperature'],
+      ['ダスター・消毒液を交換', 'Thay khăn lau và nước sát khuẩn', 'Change cloths and sanitiser'],
+      ['客席を清掃', 'Lau bàn khách', 'Clean the tables']]),
+    S('h5', '20:00', '閉店', 'Đóng cửa', 'Closing', [
+      ['オーブン・ウォーマーを切って清掃', 'Tắt và vệ sinh lò nướng, tủ giữ nóng', 'Turn off and clean the oven and warmers'],
+      ['食材をラップ・ラベルして保管', 'Bọc màng, dán nhãn và cất nguyên liệu', 'Wrap, label and store ingredients'],
+      ['ライン・スライサー・まな板を洗浄消毒', 'Vệ sinh line, máy thái, thớt', 'Clean & sanitise the line, slicer and boards'],
+      ['床清掃・ゴミ捨て', 'Lau sàn, đổ rác', 'Mop the floor, empty the bins'],
+      ['冷蔵庫・冷凍庫の温度を最終確認・記録', 'Đo nhiệt độ tủ lần cuối và ghi lại', 'Final fridge / freezer temperature check'],
+      ['レジ締め', 'Kết sổ thu ngân', 'Close the till'],
+      ['電気・ガス・施錠を確認', 'Kiểm tra điện, gas, khoá cửa', 'Check power, gas and locks']])
+  ] };
+}
+function hkTpl_() {
+  var o = readJsonKey_('hk:tpl');
+  return (o && Array.isArray(o.slots)) ? o : hkDefaultTpl_();
+}
+function hkIds_(tpl) { var a = []; tpl.slots.forEach(function (s) { (s.items || []).forEach(function (it) { a.push(it.id); }); }); return a; }
+function hkYmd_(ymd) {
+  ymd = String(ymd || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) throw new Error('Ngày không hợp lệ.');
+  return ymd;
+}
+function hkDay_(ymd) { var m = readJsonKey_('hk:' + ymd.slice(0, 7)); return (m && m[ymd.slice(8)]) || {}; }
+/** Mẫu + các mục đã tick của một ngày. Nhân viên: hôm nay / hôm qua. */
+function hkState(token, ymd) {
+  var p = auth_(token); ymd = hkYmd_(ymd);
+  if (p.r !== 'mgr' && ymd !== jstDateStr_(0) && ymd !== jstDateStr_(-1)) throw new Error('Chỉ xem được checklist của hôm nay.');
+  return { ymd: ymd, tpl: hkTpl_(), done: hkDay_(ymd) };
+}
+/** Tick / bỏ tick một mục. Nhân viên: hôm nay (hoặc hôm qua), chỉ bỏ tick của mình. Quản lý: mọi ngày, kèm tên người kiểm tra. */
+function hkTick(token, ymd, itemId, on, empId, by) {
+  var p = auth_(token), mgr = p.r === 'mgr'; ymd = hkYmd_(ymd); itemId = String(itemId || '');
+  if (!mgr) {
+    if (readSettings_().hkOn === false) throw new Error('Quán đang tắt checklist theo giờ.');
+    if (String(p.e) !== String(empId)) throw new Error('Bạn chỉ tick được bằng tên của mình.');
+    if (ymd !== jstDateStr_(0) && ymd !== jstDateStr_(-1)) throw new Error('Chỉ tick được checklist của hôm nay.');
+  }
+  if (hkIds_(hkTpl_()).indexOf(itemId) === -1) throw new Error('Mục này không còn trong checklist (tải lại trang).');
+  var name = '';
+  if (mgr) name = String(by || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 30) || '店長';
+  else readEmployees_().forEach(function (e) { if (e.id === String(p.e)) name = e.name; });
+  var dd = ymd.slice(8);
+  var res = attKv_('hk:' + ymd.slice(0, 7), function (m) {
+    m = (m && typeof m === 'object' && !Array.isArray(m)) ? m : {};
+    var d = m[dd] || (m[dd] = {}), x = d[itemId];
+    if (on) { if (!x) d[itemId] = { at: Date.now(), by: mgr ? 'm' : String(p.e), n: name }; }
+    else if (x) {
+      if (!mgr && x.by !== String(p.e)) throw new Error('Mục này do ' + (x.n || 'người khác') + ' tick — bạn không bỏ được.');
+      delete d[itemId];
+    }
+    if (!Object.keys(d).length) delete m[dd];
+    return m;
+  });
+  return { ymd: ymd, done: res[dd] || {} };
+}
+/** Quản lý lưu mẫu: thêm / sửa / xoá khung giờ và mục. Mục cũ giữ id (tick cũ vẫn đúng). */
+function hkTplSave(token, json) {
+  requireManager_(token);
+  var g; try { g = typeof json === 'string' ? JSON.parse(json) : json; } catch (e) { g = null; }
+  if (!g || !Array.isArray(g.slots) || g.slots.length > 24) throw new Error('Dữ liệu không hợp lệ.');
+  var clean = function (t) { var o = {}; ['ja', 'vi', 'en'].forEach(function (k) { var v = String((t && t[k]) || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 120); if (v) o[k] = v; }); return o; };
+  var seen = {}, uid = function (pre, id) { id = String(id || ''); if (!/^[a-z0-9]{1,16}$/.test(id) || seen[id]) id = pre + Utilities.getUuid().replace(/-/g, '').slice(0, 8); seen[id] = 1; return id; };
+  var slots = g.slots.map(function (x) {
+    var at = String(x.at || '').trim(), mm = at.match(/^(\d{1,2}):?(\d{2})$/);
+    at = mm && Number(mm[1]) < 30 && Number(mm[2]) < 60 ? ('0' + Number(mm[1])).slice(-2) + ':' + mm[2] : '';
+    var t = clean(x.t); if (!t.ja && !t.vi && !t.en && !at) return null;
+    var items = (Array.isArray(x.items) ? x.items : []).slice(0, 40).map(function (it) { var tt = clean(it.t); return (tt.ja || tt.vi || tt.en) ? { id: uid('k', it.id), t: tt } : null; }).filter(Boolean);
+    return { id: uid('s', x.id), at: at, t: t, items: items };
+  }).filter(Boolean);
+  slots.sort(function (a, b) { return (a.at || '99') < (b.at || '99') ? -1 : (a.at || '99') > (b.at || '99') ? 1 : 0; });
+  var tpl = { slots: slots, at: Date.now() };
+  attKv_('hk:tpl', function () { return tpl; });
+  return { tpl: tpl };
+}
+
+// ===========================================================================
+// 📲 THEO DÕI LINK MỚI / THÔNG BÁO (v49) — ai còn mở app bằng link cũ (Apps Script), ai đã bật thông báo
+// ===========================================================================
+function linkStatus(token) {
+  requireManager_(token);
+  var seen = readSeen_(), o = pushRead_(), subs = {}, pref = o.pref || {};
+  o.subs.forEach(function (x) { var k = String(x.w); (subs[k] = subs[k] || []).push(x); });
+  var list = readEmployees_().filter(function (e) { return !e.deleted; }).map(function (e) {
+    var sn = seen[e.id] || {}, ss = subs[e.id] || [];
+    return { id: e.id, name: e.name, gh: sn.gh || 0, gas: sn.gas || 0, open: sn.open || 0, login: sn.login || 0,
+             push: ss.length, pushAt: ss.reduce(function (a, x) { return Math.max(a, x.at || 0); }, 0),
+             ios: ss.some(function (x) { return /iPhone|iPad/.test(x.ua || ''); }), tm: !(pref[e.id] && pref[e.id].tm === 0) };
+  });
+  return { front: frontOnly_(), since: Number(props_().getProperty('LINKTRACK_SINCE')) || (function () { var n = Date.now(); try { props_().setProperty('LINKTRACK_SINCE', String(n)); } catch (e) {} return n; })(),
+           list: list, mgrPush: (subs.m || []).length };
 }

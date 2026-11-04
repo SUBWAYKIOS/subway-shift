@@ -1,0 +1,43 @@
+# Kiểm tỉ lệ giao diện — tự chạy mỗi lần src/Index.html đổi (không chặn việc đưa app lên).
+# Kết quả: tab Actions → "Kiểm tỉ lệ giao diện" → tóm tắt + file "bao-cao-ti-le" (report.html, ảnh khoanh đỏ).
+name: Kiểm tỉ lệ giao diện
+on:
+  push:
+    branches: [main]
+    paths: ["src/Index.html", "test/ui-audit.js"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Cài trình duyệt kiểm thử
+        run: |
+          npm i --no-save playwright@1.56.1 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+      - name: Chạy bộ kiểm tỉ lệ
+        id: run
+        continue-on-error: true
+        run: node test/ui-audit.js | tee audit.txt
+      - name: Tóm tắt
+        if: always()
+        run: |
+          echo "## Kiểm tỉ lệ giao diện" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          tail -40 audit.txt >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bao-cao-ti-le
+          path: test/ui-audit/
+          retention-days: 14
+      - name: Báo lỗi nếu có
+        if: steps.run.outcome == 'failure'
+        run: echo "::error::Bộ kiểm tỉ lệ phát hiện lỗi giao diện — mở file bao-cao-ti-le để xem chỗ khoanh đỏ." && exit 1
