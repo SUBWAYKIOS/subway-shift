@@ -11,7 +11,7 @@
       cogsAct: "実原価", cogsTheo: "理論原価", notes: "所見", none: "データなし", src: "データ: WingArc（Dr.Sum）CSV・シフト・打刻・発注・棚卸",
       nUp: "売上は前月比 {p} 増加しました。", nDown: "売上は前月比 {p} 減少しました。", nBestDow: "最も売上が高い曜日は{d}曜日（平均 {y}）。", nPeak: "ピークは {h}時台（1日平均 {y}）。",
       nLabor: "人件費率は {p}（目標 {t}）です。", nLaborHi: "人件費率が目標 {t} を上回っています。シフトの見直しをおすすめします。", nMh: "人時売上は {y}/時間 です。",
-      nGap: "シフトと実績の差は {h} 時間です。", page: "{a} / {b}" },
+      nGap: "シフトと実績の差は {h} 時間です。", page: "{a} / {b}", guest: "応援", gHelp: "{s}より応援", supOut: "他店への応援 {h}時間（当店の人件費には含みません）", gNote: "応援スタッフはシフト時間で計上", more: "ほか{n}名", bad: "このリンクは無効になりました。お店の管理者に新しいリンクをお尋ねください。", month: "対象月", print: "印刷", pdf: "PDF保存", pdfDl: "PDFをダウンロード", loading: "読み込み中…", viewOnly: "閲覧専用" },
     vi: { title: "Báo cáo tháng của quán", sub: "Gửi chủ quán", made: "Ngày lập", rev: "Doanh thu", cust: "Lượt khách", avg: "Chi tiêu / khách", labor: "Tỷ lệ nhân công", mh: "Doanh thu / giờ công", cogs: "Tỷ lệ giá vốn", fl: "Tỷ lệ FL",
       prev: "So tháng trước", days: "{n} ngày", dRev: "Doanh thu theo ngày", dRevPrev: "Tháng trước (cùng ngày)", dow: "Trung bình theo thứ", dowRev: "Doanh thu", dowCust: "Khách", hourly: "Doanh thu theo giờ (TB một ngày)",
       chan: "Cơ cấu (ăn tại quán / mang đi / giao hàng)", eat: "Ăn tại quán", take: "Mang đi", deli: "Giao hàng", top: "Món bán chạy (sandwich)", item: "Món", qty: "Số lượng", share: "Tỉ lệ",
@@ -20,7 +20,7 @@
       cogsAct: "Giá vốn thực", cogsTheo: "Giá vốn lý thuyết", notes: "Nhận xét", none: "Chưa có dữ liệu", src: "Nguồn: CSV WingArc (Dr.Sum), lịch ca, điểm danh, phiếu đặt hàng, kiểm kê",
       nUp: "Doanh thu tăng {p} so với tháng trước.", nDown: "Doanh thu giảm {p} so với tháng trước.", nBestDow: "Thứ bán tốt nhất: {d} (TB {y}).", nPeak: "Giờ cao điểm: {h} giờ (TB {y}/ngày).",
       nLabor: "Tỷ lệ nhân công {p} (mục tiêu {t}).", nLaborHi: "Tỷ lệ nhân công cao hơn mục tiêu {t} — nên xem lại lịch ca.", nMh: "Doanh thu / giờ công: {y}.",
-      nGap: "Chênh lệch giữa xếp ca và thực tế: {h} giờ.", page: "{a} / {b}" },
+      nGap: "Chênh lệch giữa xếp ca và thực tế: {h} giờ.", page: "{a} / {b}", guest: "Chi viện", gHelp: "chi viện từ {s}", supOut: "Nhân viên quán đi chi viện quán khác {h} giờ (không tính vào chi phí quán này)", gNote: "Người chi viện tính theo giờ xếp ca", more: "và {n} người khác", bad: "Link này không còn hiệu lực. Hãy hỏi quản lý quán link mới.", month: "Tháng", print: "In", pdf: "Lưu PDF", pdfDl: "Tải PDF", loading: "Đang tải…", viewOnly: "Chỉ xem" },
     en: { title: "Monthly store report", sub: "For the owner", made: "Created", rev: "Sales", cust: "Guests", avg: "Avg. ticket", labor: "Labor ratio", mh: "Sales / labor hr", cogs: "Food cost", fl: "FL ratio",
       prev: "vs last month", days: "{n} days", dRev: "Daily sales", dRevPrev: "Last month (same day)", dow: "Average by weekday", dowRev: "Sales", dowCust: "Guests", hourly: "Sales by hour (daily avg.)",
       chan: "Channel mix (eat-in / take-out / delivery)", eat: "Eat-in", take: "Take-out", deli: "Delivery", top: "Best sellers (sandwiches)", item: "Item", qty: "Qty", share: "Share",
@@ -29,7 +29,7 @@
       cogsAct: "Actual food cost", cogsTheo: "Theoretical food cost", notes: "Highlights", none: "No data", src: "Sources: WingArc (Dr.Sum) CSV, schedule, time clock, orders, stock count",
       nUp: "Sales rose {p} vs last month.", nDown: "Sales fell {p} vs last month.", nBestDow: "Best weekday: {d} (avg {y}).", nPeak: "Peak hour: {h}:00 (avg {y}/day).",
       nLabor: "Labor ratio {p} (target {t}).", nLaborHi: "Labor ratio is above the {t} target — consider adjusting the schedule.", nMh: "Sales per labor hour: {y}.",
-      nGap: "Scheduled vs actual hours differ by {h} h.", page: "{a} / {b}" }
+      nGap: "Scheduled vs actual hours differ by {h} h.", page: "{a} / {b}", guest: "Support", gHelp: "support from {s}", supOut: "Our staff helped other stores {h} h (not counted here)", gNote: "Support staff counted by scheduled hours", more: "+{n} more", bad: "This link is no longer valid. Please ask the store manager for a new link.", month: "Month", print: "Print", pdf: "Save PDF", pdfDl: "Download PDF", loading: "Loading…", viewOnly: "View only" }
   };
   var OR_DOW = { ja: ["日", "月", "火", "水", "木", "金", "土"], vi: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"], en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] };
   function orLang(){ var l = lsGet("sbw.orlang"); return OR_TX[l] ? l : "ja"; }
@@ -110,24 +110,66 @@
   function ownerTicketHTML(){
     var L = orLang();
     return '<div class="ticket or-ticket" id="orBox"><h3>📊 ' + escapeHTML(ot("orTitle")) + ' <span class="sub">' + escapeHTML(ot("orSub")) + '</span></h3>' +
-      '<div class="or-row"><button type="button" class="btn" data-orep="open">📄 ' + escapeHTML(ot("orOpen", { m: state.month })) + '</button>' +
+      '<div class="or-acts"><button type="button" class="btn or-main" data-orep="open">📄 ' + escapeHTML(ot("orOpen", { m: state.month })) + '</button>' +
+      '<button type="button" class="btn ghost" data-orep="link">🔗 ' + escapeHTML(ot("orLink")) + '</button>' +
       '<label class="btn ghost or-file">📥 ' + escapeHTML(ot("waImport")) + '<input type="file" accept=".csv,.txt,.tsv,.xlsx,.xls" multiple data-orep="file" hidden></label>' +
       '<button type="button" class="btn ghost" data-orep="bot">🤖 ' + escapeHTML(ot("waBot")) + '</button></div>' +
-      '<div class="or-lang ofc-seg">' + [["ja", "日本語"], ["vi", "Tiếng Việt"], ["en", "English"]].map(function(x){ return '<button type="button" data-orlang="' + x[0] + '" class="' + (L === x[0] ? "is-on" : "") + '">' + x[1] + '</button>'; }).join("") + '</div>' +
+      '<div class="or-lang ofc-seg" role="group" aria-label="' + escapeHTML(ot("orLang")) + '"><span>' + escapeHTML(ot("orLang")) + '</span>' + [["ja", "日本語"], ["vi", "Tiếng Việt"], ["en", "English"]].map(function(x){ return '<button type="button" data-orlang="' + x[0] + '" class="' + (L === x[0] ? "is-on" : "") + '">' + x[1] + '</button>'; }).join("") + '</div>' +
       '<div class="hint">' + escapeHTML(ot("orHint")) + '</div></div>';
   }
   document.addEventListener("click", function(ev){
     var b = ev.target.closest && ev.target.closest("[data-orep],[data-orlang]"); if (!b || b.tagName === "INPUT") return;
-    if (b.hasAttribute("data-orlang")){ lsSet("sbw.orlang", b.getAttribute("data-orlang")); document.querySelectorAll("[data-orlang]").forEach(function(x){ x.classList.toggle("is-on", x === b); }); return; }
+    if (b.hasAttribute("data-orlang")){
+      lsSet("sbw.orlang", b.getAttribute("data-orlang")); document.querySelectorAll("[data-orlang]").forEach(function(x){ x.classList.toggle("is-on", x === b); });
+      if (OR.key && OR.r) orvPaint();
+      return;
+    }
     var a = b.getAttribute("data-orep");
     if (a === "open") ownerReportOpen(yearMonthStr(state.year, state.month));
     else if (a === "bot") waBotDialog();
+    else if (a === "link") ownerLinkDialog();
   });
   document.addEventListener("change", async function(ev){
     var i = ev.target; if (!i || i.getAttribute("data-orep") !== "file" || !i.files || !i.files.length) return;
     var fs = Array.prototype.slice.call(i.files); i.value = "";
     await waImportFiles(fs);
   });
+
+  /** v57: link cố định cho chủ quán (chỉ xem). */
+  async function ownerLinkDialog(){
+    var info = null;
+    try { info = await call("ownerLink", ""); } catch (e){ showToast((e && e.message) || t("saveErrorToast"), true); return; }
+    function body(){
+      if (!info.on) return '<p>' + escapeHTML(ot("orLinkHow")) + '</p><div class="or-row"><button type="button" class="btn" id="orLinkMake">🔗 ' + escapeHTML(ot("orLinkMake")) + '</button></div>';
+      var u = info.url;
+      return '<p>' + escapeHTML(ot("orLinkHow")) + '</p>' +
+        (u ? '<div class="or-linkbox"><input type="text" readonly id="orLinkUrl" value="' + escapeHTML(u) + '"><button type="button" class="btn" id="orLinkCopy">' + escapeHTML(ot("orLinkCopy")) + '</button></div>' +
+             '<div class="or-row">' + (navigator.share ? '<button type="button" class="btn ghost" id="orLinkShare">📤 ' + escapeHTML(ot("orLinkShare")) + '</button>' : '') +
+             '<a class="btn ghost" id="orLinkOpen" href="' + escapeHTML(u) + '" target="_blank" rel="noopener">↗ ' + escapeHTML(ot("orLinkOpen")) + '</a></div>'
+           : '<p class="hint">' + escapeHTML(ot("orLinkNoFront")) + '</p>') +
+        '<p class="hint">' + escapeHTML(ot("orLinkSafe")) + (info.seen ? ' · ' + escapeHTML(ot("orLinkSeen", { t: new Date(info.seen).toLocaleString() })) : '') + '</p>' +
+        '<div class="or-row"><button type="button" class="btn ghost" id="orLinkNew">↻ ' + escapeHTML(ot("orLinkNew")) + '</button><button type="button" class="btn ghost or-off" id="orLinkOff">' + escapeHTML(ot("orLinkOff")) + '</button></div>';
+    }
+    await uiDialog({ title: "🔗 " + ot("orLink"), html: '<div class="or-link" id="orLinkBody">' + body() + '</div>', hideCancel: true, okText: ot("close"),
+      onOpen: function(back){
+        var host = back.querySelector("#orLinkBody");
+        async function act(a, confirmMsg){
+          if (confirmMsg && !(await uiConfirmLite(confirmMsg))) return;
+          try { info = await call("ownerLink", a); host.innerHTML = body(); wire(); if (a === "off") showToast(ot("orLinkOffDone")); }
+          catch (e){ showToast((e && e.message) || t("saveErrorToast"), true); }
+        }
+        function wire(){
+          var q = function(id){ return host.querySelector(id); };
+          if (q("#orLinkMake")) q("#orLinkMake").addEventListener("click", function(){ act("new"); });
+          if (q("#orLinkNew")) q("#orLinkNew").addEventListener("click", function(){ act("new", ot("orLinkNewQ")); });
+          if (q("#orLinkOff")) q("#orLinkOff").addEventListener("click", function(){ act("off", ot("orLinkOffQ")); });
+          if (q("#orLinkCopy")) q("#orLinkCopy").addEventListener("click", function(){ var i = q("#orLinkUrl"); try { navigator.clipboard.writeText(i.value).then(function(){ showToast(ot("orLinkCopied")); }, function(){ i.select(); document.execCommand("copy"); showToast(ot("orLinkCopied")); }); } catch (e){ i.select(); try { document.execCommand("copy"); showToast(ot("orLinkCopied")); } catch (e2){} } });
+          if (q("#orLinkShare")) q("#orLinkShare").addEventListener("click", function(){ try { navigator.share({ title: (state.settings && state.settings.storeName) || "SUBWAY", text: orT("title"), url: info.url }); } catch (e){} });
+        }
+        wire();
+      } });
+  }
+  function uiConfirmLite(msg){ return uiDialog({ title: msg, message: "", okText: "OK", cancelText: t("cancelBtn") }); }
 
   async function waBotDialog(){
     var st = null; try { st = await call("waBotStatus"); } catch (e){}
@@ -155,12 +197,13 @@
   function orDelta(a, b){ if (!b || !a) return ""; var p = (a - b) / b * 100; return '<em class="' + (p >= 0 ? "up" : "dn") + '">' + (p >= 0 ? "▲ " : "▼ ") + Math.abs(Math.round(p * 10) / 10).toFixed(1) + "%</em>"; }
   function orBars(vals, opt){
     opt = opt || {};
-    var n = vals.length || 1, W = 640, H = opt.h || 150, mx = Math.max.apply(null, vals.map(function(v){ return Math.max(v.v || 0, v.p || 0); }).concat([1]));
+    var n = vals.length || 1, W = 640, H = opt.h || 150, mx = Math.max.apply(null, vals.map(function(v){ return Math.max((v.v || 0) + (v.v2 || 0), v.p || 0); }).concat([1]));
     var bw = W / n, out = '<svg class="or-svg" viewBox="0 0 ' + W + ' ' + (H + 18) + '" xmlns="http://www.w3.org/2000/svg">';
     [0.25, 0.5, 0.75, 1].forEach(function(f){ out += '<line x1="0" x2="' + W + '" y1="' + (H - H * f) + '" y2="' + (H - H * f) + '" stroke="#E5E7EB" stroke-width="1"/>'; });
     vals.forEach(function(v, i){
       var h = (v.v || 0) / mx * (H - 6), x0 = i * bw + bw * 0.16;
       out += '<rect x="' + x0.toFixed(1) + '" y="' + (H - h).toFixed(1) + '" width="' + (bw * 0.68).toFixed(1) + '" height="' + h.toFixed(1) + '" rx="2" fill="' + (v.c || "#16884D") + '"/>';
+      if (v.v2){ var h2 = v.v2 / mx * (H - 6); out += '<rect x="' + x0.toFixed(1) + '" y="' + (H - h - h2).toFixed(1) + '" width="' + (bw * 0.68).toFixed(1) + '" height="' + h2.toFixed(1) + '" rx="2" fill="' + (v.c2 || "#F2A541") + '"/>'; }
       if (v.p){ var ph = v.p / mx * (H - 6); out += '<circle cx="' + (i * bw + bw / 2).toFixed(1) + '" cy="' + (H - ph).toFixed(1) + '" r="2.4" fill="#F2A541"/>'; }
       if (n <= 16 || i % 2 === 0 || i === n - 1) out += '<text x="' + (i * bw + bw / 2).toFixed(1) + '" y="' + (H + 13) + '" font-size="9" text-anchor="middle" fill="' + (v.tc || "#6B7280") + '">' + escapeHTML(String(v.x)) + '</text>';
     });
@@ -170,6 +213,10 @@
     var R, D;
     try { R = await call("ownerReport", ym); D = BIZ.data[ym] || await call("bizLoad", ym); BIZ.data[ym] = D; }
     catch (e){ showToast((e && e.message) || t("saveErrorToast"), true); return; }
+    var y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7));
+    await docPreview("📊 " + orT("title") + " " + y + "/" + pad(m), ownerReportHTML(R, D, ym), false);
+  }
+  function ownerReportHTML(R, D, ym){
     var L = orLang(), DOW = OR_DOW[L], y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)), nd = new Date(y, m, 0).getDate();
     var wa = (R.wa && R.wa.d) || {}, waP = (R.waPrev && R.waPrev.d) || {}, sales = (D.sales && D.sales.d) || {}, salesP = (R.salesPrev && R.salesPrev.d) || {};
     function revOf(d){ return (wa[d] && wa[d].rev) || sales[d] || 0; }
@@ -181,6 +228,10 @@
       rows.push({ d: d, w: w, rev: r0, revP: revPOf(d), cust: (wa[d] && wa[d].cust) || 0, h: wa[d] && wa[d].h, eat: wa[d] && wa[d].eat, take: wa[d] && wa[d].take, deli: wa[d] && wa[d].deli });
     }
     var schH = 0, actH = 0; Object.keys(R.sched || {}).forEach(function(k){ schH += R.sched[k]; }); Object.keys(R.att || {}).forEach(function(k){ actH += R.att[k]; });
+    // v57: người quán khác tới chi viện → cộng vào giờ làm của quán (theo giờ xếp ca); ca mình đi chi viện quán khác → không tính
+    var guests = R.guests || [], gH = guests.reduce(function(a, g){ return a + (g.h || 0); }, 0), gDay = R.guestDay || {};
+    var supOutH = 0; Object.keys(R.supOut || {}).forEach(function(k){ supOutH += R.supOut[k]; });
+    schH += gH; if (actH) actH += gH;
     var useH = actH || schH, wage = R.wage || 0, labor = wage * useH;
     var C = null; try { C = bizCalc(D); } catch (e){}
     var buy = 0; try { buy = bizBuysYen(D); } catch (e){}
@@ -212,6 +263,7 @@
       '.or-n{margin:0;padding-left:16px;}.or-n li{margin:2px 0;}.or-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}.or-src{position:absolute;left:17mm;bottom:7mm;font-size:7pt;color:#9CA3AF;}' +
       '.or-pno{position:absolute;right:17mm;bottom:7mm;font-size:8pt;color:#6B7280;}.or-leg{font-size:7.5pt;color:#6B7280;}.or-leg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin:0 3px 0 8px;vertical-align:0;}' +
       '.or-bar{height:9px;border-radius:3px;background:#16884D;display:inline-block;vertical-align:-1px;}.or-none{color:#9CA3AF;font-size:8.5pt;}' +
+      '.or-staff td small{display:block;font-size:7pt;color:#9CA3AF;line-height:1.2;}.or-tag{display:inline-block;font-size:6.5pt;font-weight:700;color:#8A5A00;background:#FDF0D5;border-radius:3px;padding:0 3px;margin-right:4px;vertical-align:1px;}' +
       '</style>';
     var head = '<div class="or-hd"><div><h1>' + escapeHTML(orT("title")) + '</h1><small>' + escapeHTML(R.store) + ' · ' + escapeHTML(orT("sub")) + '</small></div><div class="or-m">' + y + '/' + pad(m) +
       '<small>' + escapeHTML(orT("made")) + ' ' + new Date().toLocaleDateString(L === "en" ? "en-US" : "ja-JP") + '</small></div></div>';
@@ -242,10 +294,17 @@
       top.map(function(x, i){ return '<tr><td>' + (i + 1) + '</td><td style="text-align:left">' + escapeHTML(x.n) + '</td><td>' + Math.round(x.q).toLocaleString() + '</td><td>' + orPct(x.q, units) + '</td></tr>'; }).join("") + '</tbody></table>' : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') + '</div></div>';
     // trang 3: giờ công từng người + nguyên liệu
     var emps = (R.emps || []).filter(function(e){ return R.sched[e.id] || R.att[e.id]; }).sort(function(a, b){ return (R.sched[b.id] || 0) - (R.sched[a.id] || 0); });
-    var p3 = '<div class="or-2"><div class="or-s"><h2>' + escapeHTML(orT("staff")) + '</h2>' + (emps.length ? '<table class="or-t"><thead><tr><th>' + escapeHTML(orT("name")) + '</th><th>' + escapeHTML(orT("sch")) + '</th>' + (R.attOn ? '<th>' + escapeHTML(orT("act")) + '</th><th>' + escapeHTML(orT("diff")) + '</th>' : '') + '</tr></thead><tbody>' +
-      emps.slice(0, 26).map(function(e){ var a = R.sched[e.id] || 0, b = R.att[e.id] || 0; return '<tr><td>' + escapeHTML(e.name) + '</td><td>' + a.toFixed(1) + '</td>' + (R.attOn ? '<td>' + b.toFixed(1) + '</td><td>' + (b - a >= 0 ? "+" : "") + (b - a).toFixed(1) + '</td>' : '') + '</tr>'; }).join("") +
+    var gRows = guests.slice().sort(function(a, b){ return b.h - a.h; }), MAXR = 22, eShow = emps.slice(0, Math.max(6, MAXR - Math.min(gRows.length, 6))), gShow = gRows.slice(0, MAXR - eShow.length);
+    var restE = emps.slice(eShow.length), restG = gRows.slice(gShow.length);
+    var p3 = '<div class="or-2"><div class="or-s"><h2>' + escapeHTML(orT("staff")) + '</h2>' + (emps.length || gRows.length ? '<table class="or-t or-staff"><thead><tr><th>' + escapeHTML(orT("name")) + '</th><th>' + escapeHTML(orT("sch")) + '</th>' + (R.attOn ? '<th>' + escapeHTML(orT("act")) + '</th><th>' + escapeHTML(orT("diff")) + '</th>' : '') + '</tr></thead><tbody>' +
+      eShow.map(function(e){ var a = R.sched[e.id] || 0, b = R.att[e.id] || 0; return '<tr><td>' + escapeHTML(e.name) + '</td><td>' + a.toFixed(1) + '</td>' + (R.attOn ? '<td>' + b.toFixed(1) + '</td><td>' + (b - a >= 0 ? "+" : "") + (b - a).toFixed(1) + '</td>' : '') + '</tr>'; }).join("") +
+      (restE.length ? (function(){ var a = 0, b = 0; restE.forEach(function(e){ a += R.sched[e.id] || 0; b += R.att[e.id] || 0; }); return '<tr><td>' + escapeHTML(orT("more", { n: restE.length })) + '</td><td>' + a.toFixed(1) + '</td>' + (R.attOn ? '<td>' + b.toFixed(1) + '</td><td>' + (b - a >= 0 ? "+" : "") + (b - a).toFixed(1) + '</td>' : '') + '</tr>'; })() : '') +
+      gShow.map(function(g){ return '<tr class="or-g"><td><span class="or-tag">' + escapeHTML(orT("guest")) + '</span>' + escapeHTML(g.name) + '<small>' + escapeHTML(orT("gHelp", { s: String(g.store || "").replace(/^SUBWAY\s*/, "") })) + '</small></td><td>' + g.h.toFixed(1) + '</td>' + (R.attOn ? '<td>' + g.h.toFixed(1) + '</td><td>—</td>' : '') + '</tr>'; }).join("") +
+      (restG.length ? '<tr class="or-g"><td><span class="or-tag">' + escapeHTML(orT("guest")) + '</span>' + escapeHTML(orT("more", { n: restG.length })) + '</td><td>' + restG.reduce(function(a, g){ return a + g.h; }, 0).toFixed(1) + '</td>' + (R.attOn ? '<td></td><td></td>' : '') + '</tr>' : '') +
       '</tbody><tfoot><tr><td>' + escapeHTML(orT("total")) + '</td><td>' + schH.toFixed(1) + '</td>' + (R.attOn ? '<td>' + actH.toFixed(1) + '</td><td>' + (actH - schH >= 0 ? "+" : "") + (actH - schH).toFixed(1) + '</td>' : '') + '</tr></tfoot></table>' +
-      (wage ? '<div class="or-leg">' + escapeHTML(orT("wage", { y: orYen(wage) })) + ' · ' + escapeHTML(orT("laborCost")) + ' ' + orYen(labor) + '</div>' : '') : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') + '</div>';
+      (wage ? '<div class="or-leg">' + escapeHTML(orT("wage", { y: orYen(wage) })) + ' · ' + escapeHTML(orT("laborCost")) + ' ' + orYen(labor) + '</div>' : '') +
+      (gRows.length ? '<div class="or-leg">' + escapeHTML(orT("gNote")) + '</div>' : '') +
+      (supOutH ? '<div class="or-leg">' + escapeHTML(orT("supOut", { h: (Math.round(supOutH * 10) / 10).toFixed(1) })) + '</div>' : '') : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') + '</div>';
     var ings = C ? C.ings.filter(function(x){ return x.serv > 0; }).sort(function(a, b){ return (b.yen || 0) - (a.yen || 0) || b.serv - a.serv; }).slice(0, 16) : [];
     p3 += '<div class="or-s"><h2>' + escapeHTML(orT("ing")) + '</h2>' + (ings.length ? '<table class="or-t"><thead><tr><th>' + escapeHTML(orT("name")) + '</th><th>' + escapeHTML(orT("serv")) + '</th><th>' + escapeHTML(orT("packs")) + '</th><th>' + escapeHTML(orT("yen")) + '</th></tr></thead><tbody>' +
       ings.map(function(x){ return '<tr><td>' + escapeHTML(String(x.name).slice(0, 22)) + '</td><td>' + Math.round(x.serv).toLocaleString() + '</td><td>' + (x.packs != null ? (Math.round(x.packs * 10) / 10) : "—") + '</td><td>' + (x.yen != null ? orYen(x.yen) : "—") + '</td></tr>'; }).join("") + '</tbody></table>' : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') +
@@ -255,7 +314,54 @@
       '<tr><td><b>' + escapeHTML(orT("cogsAct")) + '</b></td><td><b>' + (cogsAct !== null ? orYen(cogsAct) + (rev ? " (" + orPct(cogsAct, rev) + ")" : "") : "—") + '</b></td></tr>' +
       '<tr><td>' + escapeHTML(orT("cogsTheo")) + '</td><td>' + (cogsTheo ? orYen(cogsTheo) + (rev ? " (" + orPct(cogsTheo, rev) + ")" : "") : "—") + '</td></tr></tbody></table></div></div>';
     var sd = R.schedDay || {};
-    p3 += '<div class="or-s"><h2>' + escapeHTML(orT("hrsDay")) + '</h2>' + (schH ? orBars(rows.map(function(x){ return { x: x.d, v: sd[x.d] || 0, c: "#3FA7A3", tc: x.w === 0 ? "#E35D5B" : (x.w === 6 ? "#4D7FD6" : "#6B7280") }; }), { h: 90 }) : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') + '</div>';
-    var html = page(1, 3, p1) + page(2, 3, p2) + page(3, 3, p3);
-    await docPreview("📊 " + orT("title") + " " + y + "/" + pad(m), html, false);
+    p3 += '<div class="or-s"><h2>' + escapeHTML(orT("hrsDay")) + '</h2>' + (schH ? orBars(rows.map(function(x){ return { x: x.d, v: sd[x.d] || 0, v2: gDay[x.d] || 0, c: "#3FA7A3", c2: "#F2A541", tc: x.w === 0 ? "#E35D5B" : (x.w === 6 ? "#4D7FD6" : "#6B7280") }; }), { h: 90 }) +
+      (gH ? '<div class="or-leg"><i style="background:#3FA7A3"></i>' + escapeHTML(orT("sch")) + '<i style="background:#F2A541"></i>' + escapeHTML(orT("guest")) + '</div>' : '') : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') + '</div>';
+    return page(1, 3, p1) + page(2, 3, p2) + page(3, 3, p3);
   }
+
+  // ---- v57: TRANG CHỦ QUÁN (mở bằng link ?or=…, không đăng nhập, chỉ xem) ----
+  var OR = { key: "", ym: "", r: null, d: null, months: [], err: "", fitOn: false };
+  async function renderOwnerView(ym){
+    document.body.classList.add("or-mode");
+    try { hideSplash(); } catch (e){}
+    if (!lsGet("sbw.orlang")){ var nl = String(navigator.language || "ja").toLowerCase(); lsSet("sbw.orlang", /^vi/.test(nl) ? "vi" : /^en/.test(nl) ? "en" : "ja"); }
+    if (!OR.r || ym){
+      app.innerHTML = '<div class="orv"><div class="orv-msg">' + escapeHTML(orT("loading")) + '</div></div>';
+      try { var v = await gsRun("ownerView", OR.key, ym || OR.ym || ""); OR.r = v.r; OR.d = v.d; OR.ym = v.ym; OR.months = v.months || [v.ym]; OR.err = ""; }
+      catch (e){ OR.err = (e && e.message) || "x"; }
+    }
+    orvPaint();
+  }
+  function orvPaint(){
+    var L = orLang();
+    if (OR.err){
+      app.innerHTML = '<div class="orv"><div class="orv-msg orv-bad"><b>🔒</b>' + escapeHTML(/hiệu lực|valid|無効/i.test(OR.err) ? orT("bad") : OR.err) + '</div></div>';
+      return;
+    }
+    var html = ownerReportHTML(OR.r, OR.d, OR.ym), y = OR.ym.slice(0, 4), m = Number(OR.ym.slice(5, 7));
+    var opts = OR.months.map(function(x){ return '<option value="' + x + '"' + (x === OR.ym ? " selected" : "") + '>' + x.slice(0, 4) + '/' + pad(Number(x.slice(5, 7))) + '</option>'; }).join("");
+    app.innerHTML = '<div class="orv"><header class="orv-bar no-ei">' +
+      '<div class="orv-t"><b>📊 ' + escapeHTML(orT("title")) + '</b><small>' + escapeHTML(OR.r.store || "SUBWAY") + ' · ' + escapeHTML(orT("viewOnly")) + '</small></div>' +
+      '<div class="orv-ctl"><label class="orv-m"><span>' + escapeHTML(orT("month")) + '</span><select id="orvMonth">' + opts + '</select></label>' +
+      '<div class="or-lang ofc-seg">' + [["ja", "日本語"], ["vi", "Tiếng Việt"], ["en", "English"]].map(function(x){ return '<button type="button" data-orlang="' + x[0] + '" class="' + (L === x[0] ? "is-on" : "") + '">' + x[1] + '</button>'; }).join("") + '</div>' +
+      '<button type="button" class="btn ghost" id="orvPrint">🖨 ' + escapeHTML(orT("print")) + '</button><button type="button" class="btn" id="orvPdf">' + escapeHTML(orT("pdf")) + '</button><span id="orvPdfOut"></span></div></header>' +
+      '<main class="orv-pages or-view"><div class="doc-prev" id="orvPrev">' + html + '</div></main></div>';
+    document.title = orT("title") + " " + y + "/" + pad(m) + " · " + (OR.r.store || "SUBWAY");
+    var sel = document.getElementById("orvMonth");
+    sel.addEventListener("change", function(){ renderOwnerView(sel.value); });
+    document.getElementById("orvPrint").addEventListener("click", function(){ docPrint(html, false); });
+    var pb = document.getElementById("orvPdf");
+    pb.addEventListener("click", async function(){
+      var r = await docPdfMake(orT("title") + " " + y + "-" + pad(m), html, pb);
+      var o = document.getElementById("orvPdfOut");
+      if (r && o) o.innerHTML = '<a class="btn" href="' + r.url + '" download="' + escapeHTML(r.file) + '">' + escapeHTML(orT("pdfDl")) + '</a>';
+    });
+    orvFit();
+    if (!OR.fitOn){ OR.fitOn = true; window.addEventListener("resize", orvFit); }
+  }
+  function orvFit(){
+    var w = document.querySelector(".orv-pages"), pv = document.getElementById("orvPrev"); if (!w || !pv) return;
+    var cs = getComputedStyle(w), W = w.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0) - 2;
+    pv.style.zoom = Math.min(1, W / 794);
+  }
+

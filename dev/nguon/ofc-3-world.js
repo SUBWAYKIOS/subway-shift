@@ -183,7 +183,7 @@
       if (it.t === "counter"){
         boxAt(x, y, w, h, 0, 0.8, "#1E6B3A");
         boxAt(x - 4, y - 4, w + 8, h + 8, 0.8, 0.05, "#EADBC0");
-        boxAt(x, y - 1, w, 4, 0.1, 0.12, "#F2C200");                // dải vàng mặt trước
+        boxAt(x - 0.6, y - 1.2, w + 1.2, 4, 0.1, 0.12, "#F2C200");    // dải vàng mặt trước (nhô hơn thân một chút → không trùng mặt, hết nhấp nháy)
         if (it.line){
           var n = Math.max(4, Math.floor(w / 60));
           for (var i = 0; i < n; i++){
@@ -227,11 +227,11 @@
       } else if (it.t === "pillar"){
         boxAt(x, y, w, h, 0, 1.1, "#CFC6B8"); boxAt(x - 2, y - 2, w + 4, h + 4, 1.1, 0.04, "#2E7D4F");   // cột: vẽ thấp (cắt ngang) để không che
       } else if (it.t === "block"){
-        boxAt(x, y, w, h, 0, 0.95, "#D6D0C6"); boxAt(x - 2, y - 2, w + 4, h + 4, 0.95, 0.04, "#C3BBAF");
+        boxAt(x, y, w, h, 0, 0.95, "#D6D0C6"); boxAt(x - 2, y - 2, w + 4, h + 4, 0.95, 0.04 + (L.items.indexOf(it) % 4) * 0.002, "#C3BBAF");   // v57: nắp các khối kề nhau lệch nhau 2 mm
       } else if (it.t === "frz" || it.t === "chl"){
         var under = L.items.some(function(o){ return o.t === "work" && it.x >= o.x - 1 && it.x + it.w <= o.x + o.w + 1 && it.y >= o.y - 1 && it.y + it.h <= o.y + o.h + 1; });
         var tall = !under && Math.min(w, h) >= 100, hh = tall ? 1.9 : (under ? 0.84 : 0.86), band = it.t === "frz" ? "#2563EB" : "#0F8A7E";
-        boxAt(x + 2, y + 2, w - 4, h - 4, 0, hh, "#E8EDF1");
+        boxAt(x + 2, y + 2, w - 4, h - 4, 0, hh - 0.08, "#E8EDF1");      // v57: thân dừng dưới dải màu → mặt trên không trùng (hết chớp nóc tủ)
         boxAt(x, y, w, h, hh - 0.08, 0.08, band);
         // cửa + tay nắm ở phía mở
         var d = it.door, nD = tall ? 2 : 2;
@@ -258,7 +258,7 @@
     [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function(q){
       var sx = rcx + q[0] * 48, sz = rcy + q[1] * 58;
       boxAt(sx - 17, sz - 17, 34, 34, 0.38, 0.05, "#E58FB4"); boxAt(sx - 14, sz - 14, 28, 28, 0, 0.38, "#7A6A5F");
-      var back = q[0] < 0 ? [sx - 19, sz - 17, 5, 34] : [sx + 14, sz - 17, 5, 34];
+      var back = q[0] < 0 ? [sx - 19, sz - 16.4, 5, 32.8] : [sx + 14, sz - 16.4, 5, 32.8];
       boxAt(back[0], back[1], back[2], back[3], 0.42, 0.42, "#E58FB4");
       seats.push([sx, sz, q[0] < 0 ? Math.PI / 2 : -Math.PI / 2]);
     });
@@ -278,10 +278,11 @@
       var H = out ? 2.4 : 1.1, th = out ? 0.12 : 0.1;
       function seg(hh, low){
         var lst = [], m;
-        function wb(y0b, hb, col, thick){ m = new Float32Array(16); M4.trs(m, [lx(L, cx), y0b, lz(L, cy)], [0, -ry, 0], [len / 100 + th, hb, thick]); lst.push({ g: BX, m: m, c: hexRGB(col) }); }
-        if (low){ wb(0, 0.28, "#2E7D4F", th); wb(0.28, 0.03, "#F2C200", th + 0.01); }
-        else if (out){ wb(0, 0.9, "#2E7D4F", th); wb(0.9, 0.04, "#F2C200", th + 0.01); wb(0.94, hh - 0.94, "#F3EADB", th); wb(hh - 0.05, 0.05, "#E2D5BF", th + 0.02); }
-        else { wb(0, hh, "#F3EADB", th); wb(hh - 0.04, 0.05, "#2E7D4F", th + 0.02); }
+        // v57: viền / nắp dài hơn thân 1–2 cm và thân dừng dưới nắp → không có hai mặt trùng nhau (hết nhấp nháy đầu tường)
+        function wb(y0b, hb, col, thick, ex){ m = new Float32Array(16); M4.trs(m, [lx(L, cx), y0b, lz(L, cy)], [0, -ry, 0], [len / 100 + th + (ex || 0), hb, thick]); lst.push({ g: BX, m: m, c: hexRGB(col) }); }
+        if (low){ wb(0, 0.28, "#2E7D4F", th); wb(0.28, 0.03, "#F2C200", th + 0.01, 0.01); }
+        else if (out){ wb(0, 0.9, "#2E7D4F", th); wb(0.9, 0.04, "#F2C200", th + 0.01, 0.01); wb(0.94, hh - 0.99, "#F3EADB", th); wb(hh - 0.05, 0.05, "#E2D5BF", th + 0.02, 0.02); }
+        else { wb(0, hh - 0.04, "#F3EADB", th); wb(hh - 0.04, 0.05, "#2E7D4F", th + 0.02, 0.02); }
         return N3(GEO.merge(lst), [1, 1, 1, 1]);
       }
       var nrm = [-(y1 - y0) / len, (x1 - x0) / len];               // pháp tuyến 2D; quay ra ngoài quán

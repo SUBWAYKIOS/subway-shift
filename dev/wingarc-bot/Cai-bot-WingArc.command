@@ -2,28 +2,29 @@
 # Bấm đúp MỘT LẦN: cài bot WingArc (Node + trình điều khiển Chrome), lưu tài khoản WingArc + khoá bot vào Keychain,
 # chọn quán, (tuỳ chọn) hẹn giờ chạy mỗi sáng, rồi mở chế độ HỌC để bot ghi lại đường bấm tải CSV.
 cd "$(dirname "$0")" || exit 1
-HERE="$PWD"; T="$HERE/.tools"; mkdir -p "$T"
+HERE="$PWD"; T="$HOME/.subway-tools"; mkdir -p "$T"      # ngoài iCloud (iCloud làm hỏng node_modules trong Documents)
+rm -rf "$HERE/.tools" 2>/dev/null
 clear; echo "=== Cài bot WingArc cho app SUBWAY ==="
 pause(){ echo; read -n1 -rsp "Bấm phím bất kỳ để đóng…"; echo; }
 # 1) Node.js: dùng lại bản trong SUBWAY-day-len nếu có, không thì tải bản riêng
 NODE=""
-for c in "$(command -v node)" "$HERE/../SUBWAY-day-len/.tools/node/bin/node" "$T/node/bin/node"; do
-  if [ -x "$c" ] && [ "$("$c" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)" -ge 18 ]; then NODE="$c"; break; fi
+for c in "$(command -v node)" "$T/node/bin/node"; do
+  if [ -n "$c" ] && [ -x "$c" ] && [ "$("$c" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)" -ge 18 ]; then NODE="$c"; break; fi
 done
 if [ -z "$NODE" ]; then
   ARCH=$([ "$(uname -m)" = "arm64" ] && echo arm64 || echo x64); V=v20.18.0
   echo "• Tải Node.js $V…"
   curl -fsSL "https://nodejs.org/dist/$V/node-$V-darwin-$ARCH.tar.gz" -o "$T/node.tgz" || { echo "Không tải được Node.js — kiểm tra mạng."; pause; exit 1; }
-  mkdir -p "$T/node" && tar -xzf "$T/node.tgz" -C "$T/node" --strip-components 1 && rm -f "$T/node.tgz"; NODE="$T/node/bin/node"
+  rm -rf "$T/node"; mkdir -p "$T/node" && tar -xzf "$T/node.tgz" -C "$T/node" --strip-components 1 --exclude "*/include/*" --exclude "*/share/*" || { rm -rf "$T/node" "$T/node.tgz"; echo "Giải nén Node.js lỗi (ổ đĩa đầy?)."; pause; exit 1; }; rm -f "$T/node.tgz"; NODE="$T/node/bin/node"
 fi
 export PATH="$(dirname "$NODE"):$PATH"; echo "• Node.js $("$NODE" -v)"
 if [ ! -d "$T/node_modules/playwright-core" ]; then
   echo "• Cài bộ điều khiển trình duyệt (playwright-core)…"
-  (cd "$T" && npm i --no-audit --no-fund --silent playwright-core@1.56.1 >/dev/null 2>&1) || { echo "Cài lỗi — kiểm tra mạng rồi chạy lại."; pause; exit 1; }
+  (cd "$T" && "$(dirname "$NODE")/npm" i --no-audit --no-fund --silent playwright-core@1.56.1 >"$T/npm-wa.log" 2>&1) || { echo "Cài lỗi — kiểm tra mạng rồi chạy lại (chi tiết: ~/.subway-tools/npm-wa.log)."; pause; exit 1; }
 fi
 if [ ! -d "/Applications/Google Chrome.app" ]; then
   echo "• Không thấy Google Chrome → tải Chromium riêng cho bot (~150MB)…"
-  (cd "$T" && PLAYWRIGHT_BROWSERS_PATH="$T/browsers" npx --yes playwright@1.56.1 install chromium) || echo "  (tải Chromium lỗi — có thể cài Google Chrome rồi chạy lại)"
+  (cd "$T" && PLAYWRIGHT_BROWSERS_PATH="$T/browsers" "$(dirname "$NODE")/npx" --yes playwright@1.56.1 install chromium) || echo "  (tải Chromium lỗi — có thể cài Google Chrome rồi chạy lại)"
 fi
 # 2) Chọn quán → link máy chủ (đọc từ config.js trên trang GitHub)
 echo; echo "BƯỚC 1: Chọn quán gửi dữ liệu"
@@ -49,29 +50,34 @@ read -rsp "  Dán khoá bot rồi Enter: " WK; echo
 [ -n "$WK" ] && security add-generic-password -U -a "$USER" -s "subway-wabot" -w "$WK" && echo "  ✓ Đã lưu khoá"
 unset WK
 # 4) Hẹn giờ mỗi sáng (tuỳ chọn)
-echo; read -rp "BƯỚC 4: Cho bot tự chạy MỖI SÁNG lúc 7:30? (c/k) " SCH
+echo; read -rp "BƯỚC 4: Cho bot tự chạy MỖI TỐI lúc 22:00 (quán đóng 21:00 + 1 tiếng)? (c/k) " SCH
 PL="$HOME/Library/LaunchAgents/com.subway.wingarc-bot.plist"
 if [ "$SCH" = "c" ] || [ "$SCH" = "C" ]; then
+  APP="$T/SUBWAY WingArc Bot.app"; rm -rf "$APP"
+  osacompile -o "$APP" -e 'do shell script "/bin/bash " & quoted form of (POSIX path of (path to home folder) & "Documents/SUBWAY-WingArc/WingArc-Bot.command") & " chay >/dev/null 2>&1"' \
+    && /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$APP/Contents/Info.plist" 2>/dev/null; \
+    /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.subway.wingarc-bot" "$APP/Contents/Info.plist" 2>/dev/null; codesign --force --deep -s - "$APP" >/dev/null 2>&1
   mkdir -p "$HOME/Library/LaunchAgents"
   cat > "$PL" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>Label</key><string>com.subway.wingarc-bot</string>
-  <key>ProgramArguments</key><array><string>$NODE</string><string>$HERE/wa-bot.mjs</string><string>chay</string></array>
-  <key>EnvironmentVariables</key><dict><key>PLAYWRIGHT_BROWSERS_PATH</key><string>$T/browsers</string><key>WA_TOOLS</key><string>$T</string></dict>
-  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>30</integer></dict>
-  <key>StandardOutPath</key><string>$HERE/nhat-ky-lich.txt</string><key>StandardErrorPath</key><string>$HERE/nhat-ky-lich.txt</string>
+  <key>ProgramArguments</key><array><string>$APP/Contents/MacOS/applet</string></array>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>22</integer><key>Minute</key><integer>0</integer></dict>
 </dict></plist>
 PLIST
-  launchctl unload "$PL" 2>/dev/null; launchctl load "$PL" && echo "  ✓ Đã hẹn 7:30 mỗi sáng (máy Mac cần đang bật)"
+  launchctl bootout "gui/$(id -u)" "$PL" 2>/dev/null; launchctl bootstrap "gui/$(id -u)" "$PL" && echo "  ✓ Đã hẹn 22:00 mỗi tối (máy Mac cần đang bật)"
+  echo "  (Nếu Mac hỏi \"SUBWAY WingArc Bot muốn truy cập thư mục Tài liệu\" → bấm CHO PHÉP.)"
+  SCHED_APP="$APP"
 else
-  [ -f "$PL" ] && launchctl unload "$PL" 2>/dev/null && rm -f "$PL" && echo "  (đã bỏ hẹn giờ cũ)"
+  [ -f "$PL" ] && { launchctl bootout "gui/$(id -u)" "$PL" 2>/dev/null; rm -f "$PL"; } && echo "  (đã bỏ hẹn giờ cũ)"
 fi
 # 5) Học đường bấm
 echo; echo "BƯỚC 5: Chrome sẽ mở — đăng nhập WingArc rồi tải từng file CSV như mọi khi (doanh thu ngày, theo giờ, số bán từng món…)."
 echo "         Nên chọn kỳ 'Tháng này / 当月' để lần sau bot tự lấy đúng tháng. Xong thì ĐÓNG cửa sổ Chrome."
 read -rp "  Bấm Enter để bắt đầu (hoặc gõ k để bỏ qua)… " GO
 if [ "$GO" != "k" ] && [ "$GO" != "K" ]; then PLAYWRIGHT_BROWSERS_PATH="$T/browsers" WA_TOOLS="$T" "$NODE" "$HERE/wa-bot.mjs" hoc; fi
+if [ -n "$SCHED_APP" ]; then echo; echo "• Chạy thử bot nền 1 lần (nếu Mac hỏi quyền thư mục Tài liệu → CHO PHÉP)…"; open -W "$SCHED_APP"; tail -3 "$HERE/nhat-ky.txt" 2>/dev/null; fi
 echo; echo "✅ Cài xong. Lần sau chỉ cần bấm đúp WingArc-Bot.command (hoặc để bot tự chạy mỗi sáng)."
 pause

@@ -282,7 +282,7 @@ function officeConfig(token, json) {
 var OFC_ACTS_ = ['', 'wipe', 'mop', 'vac', 'bake', 'sit', 'dance', 'dance2', 'wave', 'cheer', 'clap', 'heart', 'sleep', 'phone', 'eat', 'coffee', 'stretch', 'thumb', 'bow', 'think', 'guitar'];
 var OFC_KUDOS_ = { guest: 30, bake: 20, clean: 20, fast: 15, team: 20, smile: 15, help: 20, star: 50 };
 var OFC_GAMES_ = { bake: 900, 'catch': 3000, memo: 1000 };
-var TENCHOU_DENY_ = /^(forgetMgrDevice|mgrDevices|mgrDevicesClear|changeManagerPassword|resetManagerPasswordToDefault|payPwStatus|setPayPw|resetPayPw|listHistory|restoreHistory|tidyBackupsNow|runDailyBackup|backupNow|setDailyBackup|getBackupStatus|authorizeBackup|authorizeLine|saveLineToken|unlinkLineGroup|purgeEmployee|saveEmployees|saveSettings|exportHours|hr[A-Z]\w*|docTpl\w*|apl(List|Get|Update|Delete|Add|Hire|CfgSave|CfgGet)|ye(Get|Save)|bizLoad|posImport|posClear|salesSave|rcpSave|invItemsSave|invSave|bizApplyHc|posMonths|posRange|attKiosk\w*|attCard(Reg|Del|List)|attResetKey|attArchive\w*|attLogGet|attClose|attReopen|attConfig|hubJoin|hubAllow|storeCodeSave|setFrontUrl|cleanUpLegacyData|importSpreadsheetFile|officeConfig|owner\w*|wa[A-Z]\w*|pushTest|mgrMailTest|setPin|resetPin|issueClaimCode|revokeDevices|empQuickLink|tenchouSession)$/;
+var TENCHOU_DENY_ = /^(forgetMgrDevice|mgrDevices|mgrDevicesClear|changeManagerPassword|resetManagerPasswordToDefault|payPwStatus|setPayPw|resetPayPw|listHistory|restoreHistory|tidyBackupsNow|runDailyBackup|backupNow|setDailyBackup|getBackupStatus|authorizeBackup|authorizeLine|saveLineToken|unlinkLineGroup|purgeEmployee|saveEmployees|saveSettings|exportHours|hr[A-Z]\w*|docTpl\w*|apl(List|Get|Update|Delete|Add|Hire|CfgSave|CfgGet)|ye(Get|Save)|bizLoad|posImport|posClear|salesSave|rcpSave|invItemsSave|invSave|bizApplyHc|posMonths|posRange|attKiosk\w*|attCard(Reg|Del|List)|attResetKey|attArchive\w*|attLogGet|attClose|attReopen|attConfig|hubJoin|hubAllow|storeCodeSave|setFrontUrl|cleanUpLegacyData|importSpreadsheetFile|officeConfig|owner\w*|wa[A-Z]\w*|attEdit|hl(Month|Config)|survey\w*|selfCheck|pushTest|mgrMailTest|setPin|resetPin|issueClaimCode|revokeDevices|empQuickLink|tenchouSession)$/;
 
 /** Ai có quyền Tenchou: chức vụ cao nhất (Cửa hàng trưởng / 店長) + những người quản lý tự chọn. */
 function ofcTenchou_() {
@@ -488,16 +488,22 @@ function waBotImport(key, json) {
 /** Số liệu cho bản báo cáo chủ quán (giờ xếp ca / giờ làm thực của từng người, WingArc tháng này + tháng trước). */
 function ownerReport(token, ym) {
   requireManager_(token);
-  ym = assertYearMonth_(ym);
+  return ownerReport_(assertYearMonth_(ym));
+}
+/** v57: số liệu báo cáo chủ quán (dùng chung cho quản lý và link chỉ xem của chủ quán).
+ *  Giờ xếp ca tính theo giờ đóng cửa từng ngày; ca 応援 của nhân viên mình sang quán khác KHÔNG tính vào quán này
+ *  (ghi riêng supOut), còn người quán khác tới chi viện thì CỘNG vào giờ làm của quán này (guests). */
+function ownerReport_(ym) {
   var pym = ymShift_(ym, -1), emps = readEmployees_(), sched = readMonthNormalized_('schedule:' + ym, emps), att = readJsonKey_('att:' + ym);
-  var sh = {}, ah = {}, sd = {}, ad = {};
+  var cm = {}; try { cm = readCloseHours_(ym) || {}; } catch (eC) {}
+  var sh = {}, ah = {}, sd = {}, ad = {}, so = {};
   Object.keys(sched).forEach(function (d) {
     Object.keys(sched[d] || {}).forEach(function (id) {
       var e = sched[d][id]; if (!e || e.off || !e.shifts) return;
       e.shifts.forEach(function (x) {
-        if (x.isSupport) return;
-        var hrs = Number(x.end) - Number(x.start); if (x.breakStart != null && x.breakEnd != null) hrs -= Number(x.breakEnd) - Number(x.breakStart);
-        if (hrs > 0) { sh[id] = (sh[id] || 0) + hrs; sd[d] = (sd[d] || 0) + hrs; }
+        var hrs = netOfShiftAt_(x, cm, d); if (!(hrs > 0)) return;
+        if (x.isSupport) { so[id] = (so[id] || 0) + hrs; return; }
+        sh[id] = (sh[id] || 0) + hrs; sd[d] = (sd[d] || 0) + hrs;
       });
     });
   });
@@ -507,8 +513,64 @@ function ownerReport(token, ym) {
       var hrs = attWorkHours_(l, null); if (hrs > 0) { ah[id] = (ah[id] || 0) + hrs; ad[d] = (ad[d] || 0) + hrs; }
     });
   });
+  // Người quán khác tới chi viện (đọc lịch các quán trong mạng — giống màn "Chi viện").
+  var guests = [], gDay = {};
+  try {
+    if (hubOn_()) {
+      var gs = supScan_(ym, supMe_().id), byKey = {};
+      Object.keys(gs || {}).forEach(function (d) {
+        (gs[d] || []).forEach(function (g) {
+          var hrs = netOfShiftAt_({ start: g.start, end: g.end, endAtClose: g.atClose, breakStart: g.bs, breakEnd: g.be }, cm, d);
+          if (!(hrs > 0)) return;
+          var k = g.store + '|' + g.empId, o = byKey[k];
+          if (!o) { o = byKey[k] = { id: 'g:' + String(g.empId).slice(0, 24), name: String(g.empName || '?').slice(0, 30), store: String(g.storeName || '').slice(0, 40), h: 0, days: 0 }; guests.push(o); }
+          o.h += hrs; o.days++; gDay[d] = (gDay[d] || 0) + hrs;
+        });
+      });
+    }
+  } catch (eG) { guests = []; gDay = {}; }
   var st = readSettings_();
   return { ym: ym, store: storeLabel_(), wage: st.wage || 0, emps: emps.map(function (e) { return { id: e.id, name: e.name, rk: Math.round(Number(e.rank)) || 0 }; }),
-           sched: sh, att: ah, schedDay: sd, attDay: ad, attOn: !!attCfg_().on,
+           sched: sh, att: ah, schedDay: sd, attDay: ad, attOn: !!attCfg_().on, guests: guests, guestDay: gDay, supOut: so,
            wa: readJsonKey_('wa:' + ym), waPrev: readJsonKey_('wa:' + pym), salesPrev: readJsonKey_('sales:' + pym), bot: { on: !!props_().getProperty('WA_BOT'), last: (readJsonKey_('wabotlog').at || 0) } };
+}
+
+// ===========================================================================
+// 🔗 v57: LINK BÁO CÁO CHO CHỦ QUÁN — một link cố định, CHỈ XEM, quản lý tắt / đổi lúc nào cũng được.
+// ===========================================================================
+function ownerLinkInfo_() {
+  var P = props_(), k = P.getProperty('OWNER_KEY') || '', u = frontUrl_();
+  return { on: !!k, url: k && u ? joinUrl_(u, 'or', k) : '', key: k, at: Number(P.getProperty('OWNER_KEY_AT') || 0), seen: Number(P.getProperty('OWNER_SEEN') || 0) };
+}
+/** act: '' xem · 'new' tạo / đổi link (link cũ hết hiệu lực) · 'off' tắt. */
+function ownerLink(token, act) {
+  requireManager_(token);
+  var P = props_();
+  if (act === 'new') {
+    var k = 'o' + Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '').slice(0, 12);
+    P.setProperty('OWNER_KEY', k); P.setProperty('OWNER_KEY_AT', String(Date.now())); P.deleteProperty('OWNER_SEEN');
+  } else if (act === 'off') { P.deleteProperty('OWNER_KEY'); P.deleteProperty('OWNER_KEY_AT'); P.deleteProperty('OWNER_SEEN'); }
+  return ownerLinkInfo_();
+}
+function ownerKeyOk_(key) {
+  var k = props_().getProperty('OWNER_KEY') || '', g = String(key || '');
+  var th = throttle_('ownv');
+  var same = k.length > 20 && g.length === k.length;
+  if (same) { var x = 0; for (var i = 0; i < k.length; i++) x |= k.charCodeAt(i) ^ g.charCodeAt(i); same = x === 0; }
+  if (!same) { th.fail(); throw new Error('Link báo cáo này không còn hiệu lực. Hãy hỏi quản lý quán link mới.'); }
+  th.ok();
+}
+/** Trang chủ quán (không đăng nhập): số liệu một tháng. Chỉ đọc — không có hàm ghi nào dùng khoá này. */
+function ownerView(key, ym) {
+  ownerKeyOk_(key);
+  var cur = jstDateStr_(0).slice(0, 7);
+  // Mở link lần đầu: tháng này nếu đã có số liệu, không thì tháng trước (đầu tháng chưa có gì để xem).
+  var has_ = function (m) { var w = readJsonKey_('wa:' + m), x = readJsonKey_('sales:' + m); return !!((w.d && Object.keys(w.d).length) || (x.d && Object.keys(x.d).length)); };
+  ym = ym ? assertYearMonth_(ym) : (has_(cur) ? cur : ymShift_(cur, -1));
+  if (ym > cur || ym < ymShift_(cur, -36)) ym = cur;
+  try { props_().setProperty('OWNER_SEEN', String(Date.now())); } catch (e) {}
+  var months = [];
+  for (var i = 0; i < 13; i++) { var m = ymShift_(cur, -i); if (i < 2 || has_(m)) months.push(m); }
+  var st = readSettings_();
+  return { ok: true, ym: ym, months: months, r: ownerReport_(ym), d: bizLoad_(ym), lang: st.ownerLang || '' };
 }

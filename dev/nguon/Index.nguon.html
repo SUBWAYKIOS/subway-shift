@@ -4005,6 +4005,7 @@
   .bz-chart rect{fill:var(--green);opacity:.85;} .bz-chart rect.sat{fill:#2459A8;} .bz-chart rect.sun{fill:#B42318;}
   .bz-chart text{font-size:10px;fill:var(--muted);}
   .bz-tbl{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;}
+  .bz-sec,.bz-adv{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;}   /* v57: bảng nhiều cột (theo thứ, so tháng) cuộn ngang trong ô — trước đây đẩy cả trang tràn ngang trên điện thoại */
   .bz-tbl th,.bz-tbl td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:right;white-space:nowrap;}
   .bz-tbl th{color:var(--muted);font-weight:600;font-size:11.5px;}
   .bz-tbl .tl{text-align:left;white-space:normal;}
@@ -4321,7 +4322,7 @@
   .sa-dowrow i{display:block;font-style:normal;color:var(--muted);} .sa-dowrow b{font-variant-numeric:tabular-nums;}
   .sa-src{text-align:right;}
   .sa-empty{display:flex;flex-direction:column;gap:10px;align-items:flex-start;}
-  @media (max-width:720px){ .sa-kpis,.sa-kpis.sm{grid-template-columns:1fr 1fr;} .sa-grid2{grid-template-columns:1fr;} .sa-kpi.hero b{font-size:24px;} .sa-tools{width:100%;} .sa-tools input{flex:1;} }
+  @media (max-width:720px){ .sa-kpis,.sa-kpis.sm{grid-template-columns:1fr 1fr;} .sa-grid2{grid-template-columns:1fr;} .sa-kpi.hero b{font-size:24px;} .sa-tools{width:100%;min-width:0;} .sa-tools input{flex:1;min-width:0;} .sa-tools select{flex:1;min-width:0;max-width:100%;} }
   /* ===== v.10 — Phiếu đặt hàng PDF ===== */
   .po-btn{cursor:pointer;}
   .po-res{display:flex;flex-direction:column;gap:10px;}
@@ -5381,10 +5382,50 @@
   }
   html[data-theme="dark"] .ofc-tcbar,html[data-theme="dark"] .ofc-tool.is-tc{background:linear-gradient(135deg,#3A3220,#2C2618);color:#F3D98B;border-color:#6B5A2A;}
   /* báo cáo chủ quán */
-  .or-ticket .or-row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 8px;}
-  .or-ticket .or-row .btn{margin:0;}
+  /* v57: ô báo cáo chủ quán — nút chính rộng, 3 nút phụ đều nhau, ngôn ngữ một hàng có nhãn */
+  .or-ticket .or-acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 10px;}
+  .or-ticket .or-acts .btn{margin:0;min-width:0;width:100%;justify-content:center;white-space:normal;line-height:1.25;min-height:44px;padding:6px 8px;text-align:center;}
+  .or-ticket .or-acts .or-main{grid-column:1 / -1;}
   .or-file{cursor:pointer;display:inline-flex;align-items:center;}
-  .or-lang{margin-bottom:6px;}
+  .or-ticket .or-lang{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
+  .or-ticket .or-lang > span{font-size:12px;color:var(--muted);margin-right:2px;}
+  .or-ticket .or-lang button{min-height:34px;}
+  .or-link p{font-size:13.5px;line-height:1.55;margin:0 0 10px;}
+  .or-link .or-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .or-link .or-row .btn{margin:0;}
+  .or-link a.btn{text-decoration:none;}
+  .or-link .or-off{color:var(--off,#B91C1C);border-color:currentColor;}
+  .or-linkbox{display:flex;gap:8px;margin:0 0 10px;}
+  .or-linkbox input{flex:1;min-width:0;height:44px;font:12.5px var(--mono);border:1px solid var(--line);border-radius:10px;padding:0 10px;background:var(--cream);color:var(--ink);}
+  .or-linkbox .btn{margin:0;flex:none;}
+  /* v57: trang chủ quán (link chỉ xem) */
+  body.or-mode{background:#E9E5DB;}
+  .orv{min-height:100vh;display:flex;flex-direction:column;}
+  .orv-bar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #E5E7EB;padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+  .orv-t b{display:block;font-size:16px;color:#0B5E35;}
+  .orv-t small{display:block;font-size:12px;color:#6B7280;}
+  .orv-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .orv-ctl .btn{margin:0;min-height:40px;}
+  .orv-m{display:flex;align-items:center;gap:6px;font-size:12px;color:#6B7280;}
+  .orv-m select{height:40px;border:1px solid #D1D5DB;border-radius:10px;padding:0 8px;font-size:15px;background:#fff;color:#111;}
+  .orv-ctl .or-lang{display:flex;gap:4px;margin:0;}
+  .orv-pages{flex:1;padding:16px;overflow-x:hidden;}
+  .orv-pages .doc-prev .doc-a4{box-shadow:0 2px 12px rgba(0,0,0,.18);margin:0 auto 16px;}
+  .orv-msg{margin:20vh auto 0;max-width:420px;background:#fff;border-radius:14px;padding:22px 20px;text-align:center;font-size:15px;line-height:1.6;color:#374151;box-shadow:0 2px 12px rgba(0,0,0,.08);}
+  .orv-bad b{display:block;font-size:30px;margin-bottom:6px;}
+  @media (max-width:600px){
+    .orv-bar{padding:10px 12px;gap:8px;}
+    .orv-t b{font-size:15px;} .orv-t small{font-size:11.5px;}
+    .orv-ctl{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .orv-m,.orv-ctl .or-lang,#orvPdfOut{grid-column:1 / -1;}
+    .orv-m select{flex:1;}
+    .orv-ctl .or-lang{display:grid;grid-template-columns:repeat(3,1fr);}
+    .orv-ctl .or-lang button{min-height:38px;padding:0 4px;}
+    .orv-ctl .btn{width:100%;justify-content:center;}
+    #orvPdfOut:empty{display:none;} #orvPdfOut .btn{width:100%;}
+    .orv-pages{padding:10px;}
+  }
+  @media print{ body.or-mode .orv-bar{display:none;} }
   .or-bot p{font-size:13.5px;line-height:1.55;margin:0 0 10px;}
   .or-bot .or-row{display:flex;gap:8px;flex-wrap:wrap;}
   .or-key{width:100%;height:40px;font:13px var(--mono);border:1px solid var(--line);border-radius:10px;padding:0 10px;margin:6px 0;background:var(--cream);color:var(--ink);}
@@ -9805,10 +9846,10 @@
   // PHIÊN BẢN — Code.gs và Index.html phải cùng một bản. Dán thiếu một file hay
   // quên "New version" khi Deploy thì hiện băng cảnh báo ngay đầu app.
   // =========================================================================
-  var APP_VERSION = "2026.11.05.3";
+  var APP_VERSION = "2026.11.06.1";
   // v45: giao diện (GitHub) cập nhật thường xuyên hơn máy chủ → chỉ cảnh báo khi Code.gs CŨ HƠN bản tối thiểu
   // mà giao diện này cần (SRV_NEED), không bắt hai bên phải cùng số. Sửa máy chủ thì nâng SRV_NEED.
-  var SRV_NEED = "2026.11.05.3";
+  var SRV_NEED = "2026.11.06.1";
   function verCmp(a, b){
     var x = String(a || "").split("."), y = String(b || "").split(".");
     for (var i = 0; i < Math.max(x.length, y.length); i++){ var p = Number(x[i]) || 0, q = Number(y[i]) || 0; if (p !== q) return p < q ? -1 : 1; }
@@ -10955,6 +10996,9 @@
           // Mở từ mã QR của màn hình quán (…?pa=…) → sau khi đăng nhập hỏi 出勤 / 休憩 / 退勤.
           var ap0 = loc && loc.parameter && loc.parameter.apply;
           if (ap0 && /^[0-9a-f]{12,40}$/.test(String(ap0))){ AP.key = String(ap0); if (state._booted && !state.token) renderApply(); }
+          // v57: link báo cáo cho chủ quán (?or=…) → trang chỉ xem, không đăng nhập
+          var or0 = loc && loc.parameter && loc.parameter.or;
+          if (or0 && /^o[0-9a-f]{40,64}$/.test(String(or0))){ OR.key = String(or0); if (state._booted && !state.token) renderOwnerView(); }
           // v41: ?lang=vi|en|ja trên link — trong Apps Script trang chạy trong khung riêng nên location.search
           // không thấy tham số; phải đọc qua google.script.url.getLocation.
           var lg0 = loc && loc.parameter && loc.parameter.lang;
@@ -28969,7 +29013,7 @@
       if (it.t === "counter"){
         boxAt(x, y, w, h, 0, 0.8, "#1E6B3A");
         boxAt(x - 4, y - 4, w + 8, h + 8, 0.8, 0.05, "#EADBC0");
-        boxAt(x, y - 1, w, 4, 0.1, 0.12, "#F2C200");                // dải vàng mặt trước
+        boxAt(x - 0.6, y - 1.2, w + 1.2, 4, 0.1, 0.12, "#F2C200");    // dải vàng mặt trước (nhô hơn thân một chút → không trùng mặt, hết nhấp nháy)
         if (it.line){
           var n = Math.max(4, Math.floor(w / 60));
           for (var i = 0; i < n; i++){
@@ -29013,11 +29057,11 @@
       } else if (it.t === "pillar"){
         boxAt(x, y, w, h, 0, 1.1, "#CFC6B8"); boxAt(x - 2, y - 2, w + 4, h + 4, 1.1, 0.04, "#2E7D4F");   // cột: vẽ thấp (cắt ngang) để không che
       } else if (it.t === "block"){
-        boxAt(x, y, w, h, 0, 0.95, "#D6D0C6"); boxAt(x - 2, y - 2, w + 4, h + 4, 0.95, 0.04, "#C3BBAF");
+        boxAt(x, y, w, h, 0, 0.95, "#D6D0C6"); boxAt(x - 2, y - 2, w + 4, h + 4, 0.95, 0.04 + (L.items.indexOf(it) % 4) * 0.002, "#C3BBAF");   // v57: nắp các khối kề nhau lệch nhau 2 mm
       } else if (it.t === "frz" || it.t === "chl"){
         var under = L.items.some(function(o){ return o.t === "work" && it.x >= o.x - 1 && it.x + it.w <= o.x + o.w + 1 && it.y >= o.y - 1 && it.y + it.h <= o.y + o.h + 1; });
         var tall = !under && Math.min(w, h) >= 100, hh = tall ? 1.9 : (under ? 0.84 : 0.86), band = it.t === "frz" ? "#2563EB" : "#0F8A7E";
-        boxAt(x + 2, y + 2, w - 4, h - 4, 0, hh, "#E8EDF1");
+        boxAt(x + 2, y + 2, w - 4, h - 4, 0, hh - 0.08, "#E8EDF1");      // v57: thân dừng dưới dải màu → mặt trên không trùng (hết chớp nóc tủ)
         boxAt(x, y, w, h, hh - 0.08, 0.08, band);
         // cửa + tay nắm ở phía mở
         var d = it.door, nD = tall ? 2 : 2;
@@ -29044,7 +29088,7 @@
     [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function(q){
       var sx = rcx + q[0] * 48, sz = rcy + q[1] * 58;
       boxAt(sx - 17, sz - 17, 34, 34, 0.38, 0.05, "#E58FB4"); boxAt(sx - 14, sz - 14, 28, 28, 0, 0.38, "#7A6A5F");
-      var back = q[0] < 0 ? [sx - 19, sz - 17, 5, 34] : [sx + 14, sz - 17, 5, 34];
+      var back = q[0] < 0 ? [sx - 19, sz - 16.4, 5, 32.8] : [sx + 14, sz - 16.4, 5, 32.8];
       boxAt(back[0], back[1], back[2], back[3], 0.42, 0.42, "#E58FB4");
       seats.push([sx, sz, q[0] < 0 ? Math.PI / 2 : -Math.PI / 2]);
     });
@@ -29064,10 +29108,11 @@
       var H = out ? 2.4 : 1.1, th = out ? 0.12 : 0.1;
       function seg(hh, low){
         var lst = [], m;
-        function wb(y0b, hb, col, thick){ m = new Float32Array(16); M4.trs(m, [lx(L, cx), y0b, lz(L, cy)], [0, -ry, 0], [len / 100 + th, hb, thick]); lst.push({ g: BX, m: m, c: hexRGB(col) }); }
-        if (low){ wb(0, 0.28, "#2E7D4F", th); wb(0.28, 0.03, "#F2C200", th + 0.01); }
-        else if (out){ wb(0, 0.9, "#2E7D4F", th); wb(0.9, 0.04, "#F2C200", th + 0.01); wb(0.94, hh - 0.94, "#F3EADB", th); wb(hh - 0.05, 0.05, "#E2D5BF", th + 0.02); }
-        else { wb(0, hh, "#F3EADB", th); wb(hh - 0.04, 0.05, "#2E7D4F", th + 0.02); }
+        // v57: viền / nắp dài hơn thân 1–2 cm và thân dừng dưới nắp → không có hai mặt trùng nhau (hết nhấp nháy đầu tường)
+        function wb(y0b, hb, col, thick, ex){ m = new Float32Array(16); M4.trs(m, [lx(L, cx), y0b, lz(L, cy)], [0, -ry, 0], [len / 100 + th + (ex || 0), hb, thick]); lst.push({ g: BX, m: m, c: hexRGB(col) }); }
+        if (low){ wb(0, 0.28, "#2E7D4F", th); wb(0.28, 0.03, "#F2C200", th + 0.01, 0.01); }
+        else if (out){ wb(0, 0.9, "#2E7D4F", th); wb(0.9, 0.04, "#F2C200", th + 0.01, 0.01); wb(0.94, hh - 0.99, "#F3EADB", th); wb(hh - 0.05, 0.05, "#E2D5BF", th + 0.02, 0.02); }
+        else { wb(0, hh - 0.04, "#F3EADB", th); wb(hh - 0.04, 0.05, "#2E7D4F", th + 0.02, 0.02); }
         return N3(GEO.merge(lst), [1, 1, 1, 1]);
       }
       var nrm = [-(y1 - y0) / len, (x1 - x0) / len];               // pháp tuyến 2D; quay ra ngoài quán
@@ -29222,6 +29267,10 @@
           if (!e.free) e.ty = e.spot.yaw;
           if (e.self && e.free) e.ty = Math.PI;
           if (e.free && e.endYaw != null && !e.self){ e.ty = e.endYaw; e.endYaw = null; }
+          if (e.pendAct === "sit"){                                  // v57: tới ghế → ngồi đúng chỗ, quay đúng hướng ghế
+            var stS = ofcSeatNear(L, e.goal ? e.goal[0] : e.x, e.goal ? e.goal[1] : e.y, 60);
+            if (stS){ e.x = stS[0]; e.y = stS[1]; e.ty = stS[2]; e.endYaw = null; }
+          }
           if (e.pendAct != null){ ofcSetAct(e, e.pendAct, t); e.pendAct = null; }
         }
       }
@@ -29235,7 +29284,7 @@
       P.root.p[0] = lx(L, e.x); P.root.p[2] = lz(L, e.y); P.root.r[1] = e.yaw;
       var md = e.mode, act = md === "walk" ? "" : (e.act || "");
       if (act === "sit") md = "brk";
-      var ex = { seed: e.seed, look: md === "walk" ? 0 : -0.16, seatH: (e.spot && e.spot.seat && !e.free) || e.kind === "brk" && !e.free ? 0.33 : (act === "sit" ? 0.07 : 0.33) };
+      var ex = { seed: e.seed, look: md === "walk" ? 0 : -0.16, seatH: (e.spot && e.spot.seat && !e.free) || e.kind === "brk" && !e.free ? 0.33 : (act === "sit" ? (ofcSeatNear(L, e.x, e.y, 12) ? 0.33 : 0.07) : 0.33) };
       if (e.wave && t < e.wave && !act) ex.wave = 1;
       if (e.jumpAt && t - e.jumpAt < 0.7) ex.jump = (t - e.jumpAt) / 0.7;
       avAnimate(P, md, t, ex);
@@ -29469,7 +29518,7 @@
       bdT: "Bảng tin hôm nay", bdNow: "Đang ở quán", bdSoon: "Sắp / sẽ vào ca", bdSup: "Đi chi viện quán khác", bdGuest: "Chi viện tới", bdLate: "Tới giờ nhưng chưa bấm thẻ", bdMemo: "Dặn dò",
       bdBday: "🎂 Sinh nhật hôm nay", bdNone: "Không có", layout: "Bố cục phòng", layAuto: "Tự chọn theo tên quán", layOta: "Theo sơ đồ Otagawa", layBasic: "Mẫu chung",
       waved: "Đã vẫy tay với {n}", err: "Không tải được quán", retry: "Thử lại", upd: "Cập nhật {t}", petN0: "Không", petN1: "Mèo", petN2: "Cún", petN3: "Gà con", online: "Đang mở app", sumOn: " · {n} người đang ghé", tFx: "Hiệu ứng", gEf: "Hiệu ứng nhân vật (mở theo cấp)", ef0: "Không", ef1: "✨ Lấp lánh", ef2: "⭐ Vòng sao", ef3: "👑 Hào quang vàng", ef4: "🌈 Cầu vồng", efAuto: "Tự động theo cấp",
-      orTitle: "Báo cáo cho chủ quán", orSub: "doanh thu · khách · giờ công · nguyên liệu — in / PDF", orOpen: "Báo cáo tháng {m}", orHint: "Kéo thả hoặc chọn các file CSV xuất từ WingArc (doanh thu ngày, theo giờ, số bán từng món…) — app tự nhận loại file. Hoặc để bot trên máy Mac tự tải mỗi sáng.", waImport: "Nhập CSV WingArc", waBot: "Bot WingArc", waDone: "Đã nhập {n} file", waBad: "Không nhận ra file WingArc này (cần cột ngày + doanh thu / khách / giờ).", botHow: "Bot chạy trên máy Mac của anh: mở WingArc bằng tài khoản lưu trong Keychain, tải CSV rồi gửi vào app bằng khoá dưới đây. Khoá chỉ dùng để GỬI doanh thu / số bán, không đọc được dữ liệu nào.", botLast: "Bot gửi gần nhất: {t}", botRenew: "Tạo khoá mới (khoá cũ hết hiệu lực)", botMake: "Tạo khoá cho bot", botOff: "Tắt bot", botKeyOnce: "Khoá chỉ hiện MỘT lần — dán vào công cụ cài bot trên Mac (nó lưu vào Keychain).", botCopy: "Chép khoá", botOffDone: "Đã tắt bot",
+      orTitle: "Báo cáo cho chủ quán", orSub: "doanh thu · khách · giờ công · nguyên liệu — in / PDF", orOpen: "Báo cáo tháng {m}", orHint: "Kéo thả hoặc chọn các file CSV xuất từ WingArc (doanh thu ngày, theo giờ, số bán từng món…) — app tự nhận loại file. Hoặc để bot trên máy Mac tự tải mỗi tối (22:00).", waImport: "Nhập CSV WingArc", waBot: "Bot WingArc", waDone: "Đã nhập {n} file", waBad: "Không nhận ra file WingArc này (cần cột ngày + doanh thu / khách / giờ).", botHow: "Bot chạy trên máy Mac của anh: mở WingArc bằng tài khoản lưu trong Keychain, tải CSV rồi gửi vào app bằng khoá dưới đây. Khoá chỉ dùng để GỬI doanh thu / số bán, không đọc được dữ liệu nào.", botLast: "Bot gửi gần nhất: {t}", botRenew: "Tạo khoá mới (khoá cũ hết hiệu lực)", botMake: "Tạo khoá cho bot", botOff: "Tắt bot", botKeyOnce: "Khoá chỉ hiện MỘT lần — dán vào công cụ cài bot trên Mac (nó lưu vào Keychain).", botCopy: "Chép khoá", botOffDone: "Đã tắt bot", orLink: "Link cho chủ quán", orLang: "Ngôn ngữ báo cáo", orLinkHow: "Một đường link cố định để chủ quán xem báo cáo bất cứ lúc nào (tự chọn tháng, in / lưu PDF). Chỉ xem được — không sửa được gì, không thấy lương từng người hay mật khẩu.", orLinkMake: "Tạo link", orLinkCopy: "Chép", orLinkCopied: "Đã chép link", orLinkShare: "Gửi…", orLinkOpen: "Mở thử", orLinkNew: "Đổi link mới", orLinkNewQ: "Đổi link mới? Link đang gửi chủ quán sẽ không mở được nữa.", orLinkOff: "Tắt link", orLinkOffQ: "Tắt link? Chủ quán sẽ không xem được nữa (bật lại sẽ là link mới).", orLinkOffDone: "Đã tắt link chủ quán", orLinkSafe: "Ai có link đều xem được báo cáo — chỉ gửi cho chủ quán.", orLinkSeen: "chủ quán mở gần nhất: {t}", orLinkNoFront: "Hãy mở app một lần bằng link GitHub của quán để app biết địa chỉ trang, rồi mở lại hộp này.",
       actT: "Động tác", act_wipe: "Lau bàn", act_mop: "Lau sàn", act_vac: "Hút bụi", act_bake: "Làm bánh", act_sit: "Ngồi", act_dance: "Nhảy", act_dance2: "Disco", act_guitar: "Đàn hát", act_bow: "Chào khách", act_wave: "Vẫy tay", act_cheer: "Cổ vũ", act_clap: "Vỗ tay", act_heart: "Thả tim", act_thumb: "Tuyệt vời", act_coffee: "Uống cà phê", act_eat: "Ăn bánh", act_phone: "Điện thoại", act_think: "Suy nghĩ", act_stretch: "Vươn vai", act_sleep: "Ngủ gật",
       kd_guest: "Được khách khen", kd_bake: "Giỏi làm bánh", kd_clean: "Dọn dẹp giỏi", kd_fast: "Nhanh nhẹn", kd_team: "Đồng đội tốt", kd_smile: "Nụ cười thân thiện", kd_help: "Hay giúp đỡ", kd_star: "Nhân viên của tháng", kd_xp: "Được thưởng điểm", kd_unlock: "Được tặng đồ",
       rank1: "Trainer", rank2: "Trưởng ca", rank3: "Phó cửa hàng", rank4: "Cửa hàng trưởng",
@@ -29500,7 +29549,7 @@
       bdT: "Today's board", bdNow: "In the store", bdSoon: "Starting soon / later", bdSup: "Helping another store", bdGuest: "Helpers visiting", bdLate: "Shift started, not clocked in", bdMemo: "Notes",
       bdBday: "🎂 Birthday today", bdNone: "None", layout: "Room layout", layAuto: "Auto (by store name)", layOta: "Otagawa floor plan", layBasic: "Generic",
       waved: "Waved at {n}", err: "Couldn't load the store", retry: "Retry", upd: "Updated {t}", petN0: "None", petN1: "Cat", petN2: "Puppy", petN3: "Chick", online: "Using the app", sumOn: " · {n} dropping by", tFx: "Effects", gEf: "Avatar effect (unlocks by level)", ef0: "None", ef1: "✨ Sparkle", ef2: "⭐ Star ring", ef3: "👑 Golden aura", ef4: "🌈 Rainbow", efAuto: "Auto by level",
-      orTitle: "Owner report", orSub: "sales · guests · labor · ingredients — print / PDF", orOpen: "Report for month {m}", orHint: "Drop or pick the CSV files exported from WingArc (daily sales, hourly, item sales…) — the app detects each file type. Or let the Mac bot fetch them every morning.", waImport: "Import WingArc CSV", waBot: "WingArc bot", waDone: "Imported {n} files", waBad: "Couldn't read this WingArc file (needs a date column + sales / guests / hours).", botHow: "The bot runs on your Mac: it opens WingArc with the account saved in Keychain, downloads the CSVs and sends them to the app with the key below. The key can only SEND sales data; it can't read anything.", botLast: "Last bot upload: {t}", botRenew: "New key (old key stops working)", botMake: "Create bot key", botOff: "Turn bot off", botKeyOnce: "The key is shown ONCE — paste it into the bot setup tool on the Mac (it saves it in Keychain).", botCopy: "Copy key", botOffDone: "Bot turned off",
+      orTitle: "Owner report", orSub: "sales · guests · labor · ingredients — print / PDF", orOpen: "Report for month {m}", orHint: "Drop or pick the CSV files exported from WingArc (daily sales, hourly, item sales…) — the app detects each file type. Or let the Mac bot fetch them every night (22:00).", waImport: "Import WingArc CSV", waBot: "WingArc bot", waDone: "Imported {n} files", waBad: "Couldn't read this WingArc file (needs a date column + sales / guests / hours).", botHow: "The bot runs on your Mac: it opens WingArc with the account saved in Keychain, downloads the CSVs and sends them to the app with the key below. The key can only SEND sales data; it can't read anything.", botLast: "Last bot upload: {t}", botRenew: "New key (old key stops working)", botMake: "Create bot key", botOff: "Turn bot off", botKeyOnce: "The key is shown ONCE — paste it into the bot setup tool on the Mac (it saves it in Keychain).", botCopy: "Copy key", botOffDone: "Bot turned off", orLink: "Owner link", orLang: "Report language", orLinkHow: "One fixed link the owner can open any time to see the report (pick a month, print / save PDF). View only — nothing can be changed, no individual pay or passwords.", orLinkMake: "Create link", orLinkCopy: "Copy", orLinkCopied: "Link copied", orLinkShare: "Send…", orLinkOpen: "Open", orLinkNew: "New link", orLinkNewQ: "Create a new link? The link you sent the owner will stop working.", orLinkOff: "Turn off", orLinkOffQ: "Turn the link off? The owner won't be able to view it (turning on again makes a new link).", orLinkOffDone: "Owner link turned off", orLinkSafe: "Anyone with the link can view the report — send it to the owner only.", orLinkSeen: "owner last opened: {t}", orLinkNoFront: "Open the app once from the store's GitHub link so it knows the page address, then reopen this box.",
       actT: "Actions", act_wipe: "Wipe", act_mop: "Mop", act_vac: "Vacuum", act_bake: "Make bread", act_sit: "Sit", act_dance: "Dance", act_dance2: "Disco", act_guitar: "Guitar", act_bow: "Greet", act_wave: "Wave", act_cheer: "Cheer", act_clap: "Clap", act_heart: "Heart", act_thumb: "Great", act_coffee: "Coffee", act_eat: "Snack", act_phone: "Phone", act_think: "Think", act_stretch: "Stretch", act_sleep: "Nap",
       kd_guest: "Praised by a guest", kd_bake: "Great baker", kd_clean: "Super tidy", kd_fast: "Quick hands", kd_team: "Team player", kd_smile: "Warm smile", kd_help: "Always helping", kd_star: "Employee of the month", kd_xp: "Bonus points", kd_unlock: "Got a gift",
       rank1: "Trainer", rank2: "Shift leader", rank3: "Asst. manager", rank4: "Store manager",
@@ -29531,7 +29580,7 @@
       bdT: "今日の掲示板", bdNow: "お店にいる人", bdSoon: "このあと出勤", bdSup: "他店へヘルプ", bdGuest: "他店からヘルプ", bdLate: "出勤時刻を過ぎて未打刻", bdMemo: "連絡",
       bdBday: "🎂 今日が誕生日", bdNone: "なし", layout: "部屋のレイアウト", layAuto: "店名で自動", layOta: "太田川店の図面", layBasic: "標準",
       waved: "{n}さんに手をふりました", err: "お店を読み込めません", retry: "再試行", upd: "{t} 更新", petN0: "なし", petN1: "ねこ", petN2: "いぬ", petN3: "ひよこ", online: "アプリを見ています", sumOn: " · {n}人が来店中", tFx: "エフェクト", gEf: "アバターのエフェクト（レベルで解放）", ef0: "なし", ef1: "✨ きらきら", ef2: "⭐ スターリング", ef3: "👑 ゴールドオーラ", ef4: "🌈 レインボー", efAuto: "レベルで自動",
-      orTitle: "オーナー向けレポート", orSub: "売上・客数・人件費・原材料 — 印刷／PDF", orOpen: "{m}月のレポート", orHint: "WingArcから出力したCSV（日別売上・時間帯別・商品別販売数など）をドラッグ／選択すると種類を自動判別して取り込みます。Macのボットで毎朝自動取得もできます。", waImport: "WingArc CSV取込", waBot: "WingArcボット", waDone: "{n}件のファイルを取り込みました", waBad: "このWingArcファイルを読み取れません（日付列＋売上・客数・時間帯が必要）。", botHow: "ボットはMac上で動きます。キーチェーンに保存したアカウントでWingArcを開き、CSVをダウンロードして下のキーでアプリへ送信します。キーは売上データの送信専用で、データを読むことはできません。", botLast: "最終送信: {t}", botRenew: "新しいキーを発行（古いキーは無効）", botMake: "ボット用キーを発行", botOff: "ボットを停止", botKeyOnce: "キーは一度だけ表示されます — Macのボット設定ツールに貼り付けてください（キーチェーンに保存されます）。", botCopy: "キーをコピー", botOffDone: "ボットを停止しました",
+      orTitle: "オーナー向けレポート", orSub: "売上・客数・人件費・原材料 — 印刷／PDF", orOpen: "{m}月のレポート", orHint: "WingArcから出力したCSV（日別売上・時間帯別・商品別販売数など）をドラッグ／選択すると種類を自動判別して取り込みます。Macのボットで毎晩（22:00）自動取得もできます。", waImport: "WingArc CSV取込", waBot: "WingArcボット", waDone: "{n}件のファイルを取り込みました", waBad: "このWingArcファイルを読み取れません（日付列＋売上・客数・時間帯が必要）。", botHow: "ボットはMac上で動きます。キーチェーンに保存したアカウントでWingArcを開き、CSVをダウンロードして下のキーでアプリへ送信します。キーは売上データの送信専用で、データを読むことはできません。", botLast: "最終送信: {t}", botRenew: "新しいキーを発行（古いキーは無効）", botMake: "ボット用キーを発行", botOff: "ボットを停止", botKeyOnce: "キーは一度だけ表示されます — Macのボット設定ツールに貼り付けてください（キーチェーンに保存されます）。", botCopy: "キーをコピー", botOffDone: "ボットを停止しました", orLink: "オーナー用リンク", orLang: "レポートの言語", orLinkHow: "オーナー様がいつでもレポートを見られる固定リンクです（月の選択・印刷／PDF保存）。閲覧のみで、変更はできません。個人の給与やパスワードは表示されません。", orLinkMake: "リンクを作成", orLinkCopy: "コピー", orLinkCopied: "リンクをコピーしました", orLinkShare: "送る…", orLinkOpen: "開いて確認", orLinkNew: "リンクを再発行", orLinkNewQ: "リンクを再発行しますか？オーナー様に送ったリンクは使えなくなります。", orLinkOff: "リンクを停止", orLinkOffQ: "リンクを停止しますか？オーナー様は閲覧できなくなります（再開すると新しいリンクになります）。", orLinkOffDone: "オーナー用リンクを停止しました", orLinkSafe: "リンクを知っている人は誰でも閲覧できます。オーナー様だけに送ってください。", orLinkSeen: "オーナー様の最終閲覧: {t}", orLinkNoFront: "一度お店のGitHubリンクからアプリを開いてページのアドレスを登録してから、もう一度開いてください。",
       actT: "アクション", act_wipe: "テーブル拭き", act_mop: "床モップ", act_vac: "掃除機", act_bake: "パン作り", act_sit: "座る", act_dance: "ダンス", act_dance2: "ディスコ", act_guitar: "ギター", act_bow: "あいさつ", act_wave: "手をふる", act_cheer: "応援", act_clap: "拍手", act_heart: "ハート", act_thumb: "いいね", act_coffee: "コーヒー", act_eat: "おやつ", act_phone: "スマホ", act_think: "考え中", act_stretch: "のび", act_sleep: "うとうと",
       kd_guest: "お客様からお褒め", kd_bake: "パン作り名人", kd_clean: "清掃名人", kd_fast: "てきぱき", kd_team: "チームワーク", kd_smile: "笑顔がすてき", kd_help: "助け上手", kd_star: "今月のMVP", kd_xp: "ポイント付与", kd_unlock: "プレゼント",
       rank1: "トレーナー", rank2: "シフトリーダー", rank3: "副店長", rank4: "店長",
@@ -30011,10 +30060,12 @@
     var hand = addK(P.armR, N3(null, null, { p: [0, -0.29, 0.02] })), pr = {};
     function grp(par){ var g = addK(par, N3(null)); g.v = false; return g; }
     pr.cloth = grp(hand); addK(pr.cloth, N3(BX, "#5EC4E8", { p: [0, -0.02, 0.02], s: [0.1, 0.02, 0.08], ol: 2 }));
-    pr.mop = grp(hand);
-    addK(pr.mop, N3(CY, "#C8A06A", { p: [0, -0.62, 0.0], s: [0.012, 0.95, 0.012], r: [0, 0, 0] }));
-    addK(pr.mop, N3(BX, "#3B82C4", { p: [0, -0.66, 0], s: [0.26, 0.04, 0.08], ol: 2 }));
-    addK(pr.mop, N3(BX, "#F2F2F2", { p: [0, -0.7, 0], s: [0.3, 0.05, 0.12] }));
+    // v57: cây lau sàn đặt theo thân (đầu lau CHẠM SÀN, cán lên tới hai tay) — trước đây treo ở tay nên lơ lửng
+    pr.mop = grp(P.root);
+    var hy = P.L + P.T - 0.2, mz = 0.4, dy = hy - 0.04, dz = 0.2 - mz, ml = Math.hypot(dy, dz);
+    addK(pr.mop, N3(BX, "#F2F2F2", { p: [0, 0.0, mz], s: [0.3, 0.04, 0.12], ol: 2 }));
+    addK(pr.mop, N3(BX, "#3B82C4", { p: [0, 0.035, mz], s: [0.24, 0.03, 0.07] }));
+    addK(pr.mop, N3(CY, "#C8A06A", { p: [0, 0.05, mz], s: [0.013, ml + 0.06, 0.013], r: [Math.atan2(dz, dy), 0, 0] }));
     pr.vac = grp(P.root);
     addK(pr.vac, N3(BX, "#E35D5B", { p: [0.16, 0, 0.32], s: [0.2, 0.16, 0.26], ol: 2 }));
     addK(pr.vac, N3(SP, "#2B2F36", { p: [0.16, 0.16, 0.32], s: [0.06, 0.03, 0.06] }));
@@ -30029,10 +30080,12 @@
     pr.sand = grp(hand);
     addK(pr.sand, N3(G.dot, "#E9B067", { p: [0, -0.02, 0.05], s: [0.045, 0.04, 0.1], ol: 2 }));
     addK(pr.sand, N3(G.dot, "#E8463B", { p: [0, -0.01, 0.05], s: [0.047, 0.01, 0.09] }));
+    // v57: đàn ôm trước bụng — thân đàn bên phải, cần đàn chéo lên sang trái (tay trái giữ cần, tay phải gảy)
     pr.guitar = grp(P.torso);
-    addK(pr.guitar, N3(G.dot, "#C2410C", { p: [0.02, P.T * 0.35, 0.16], s: [0.13, 0.15, 0.04], r: [0, 0, 0.6], ol: 2 }));
-    addK(pr.guitar, N3(G.dot, "#2B1D14", { p: [0.02, P.T * 0.35, 0.2], s: [0.035, 0.035, 0.01], r: [0, 0, 0.6] }));
-    addK(pr.guitar, N3(BX, "#7C4A1E", { p: [-0.18, P.T * 0.6, 0.17], s: [0.035, 0.3, 0.025], r: [0, 0, 0.95], ol: 2 }));
+    addK(pr.guitar, N3(G.dot, "#C2410C", { p: [0.05, P.T * 0.28, 0.15], s: [0.12, 0.14, 0.045], r: [0, 0, 0.45], ol: 2 }));
+    addK(pr.guitar, N3(G.dot, "#2B1D14", { p: [0.045, P.T * 0.3, 0.197], s: [0.035, 0.035, 0.006], r: [0, 0, 0.45] }));
+    addK(pr.guitar, N3(BX, "#7C4A1E", { p: [0.0, P.T * 0.36, 0.17], s: [0.03, 0.34, 0.022], r: [0, 0, 1.08], ol: 2 }));
+    addK(pr.guitar, N3(BX, "#3B2414", { p: [-0.3, P.T * 0.36 + 0.16, 0.17], s: [0.05, 0.07, 0.024], r: [0, 0, 1.08] }));
     P.props = pr; return pr;
   }
   var OFC_ACT_PROP = { wipe: "cloth", mop: "mop", vac: "vac", bake: "bread", phone: "phone", coffee: "cup", eat: "sand", guitar: "guitar" };
@@ -30043,10 +30096,11 @@
     if (!act) return;
     var b = P.body, s = Math.sin, sd = (ex && ex.seed) || 0;
     if (act === "wipe"){
-      P.torso.r = [0.35, 0, 0]; P.armR.r = [-1.25 + s(t * 7) * 0.12, 0, 0.35 + Math.cos(t * 7) * 0.35]; P.armL.r = [-0.5, 0, -0.2]; P.head.r[0] += 0.25;
+      P.torso.r = [0.35, 0, 0]; P.armR.r = [-1.2 + s(t * 7) * 0.1, 0, -0.1 + Math.cos(t * 7) * 0.3]; P.armL.r = [-0.85, 0, 0.25]; P.head.r[0] += 0.25;   // lau vòng tròn trên mặt bàn, tay kia chống bàn
     } else if (act === "mop"){
-      P.torso.r = [0.2, s(t * 3) * 0.35, 0]; P.armR.r = [-0.65, 0, 0.55 + s(t * 3) * 0.2]; P.armL.r = [-0.8, 0, -0.1 + s(t * 3) * 0.15];
-      if (P.props) P.props.mop.r = [0.35, 0, -0.35 + s(t * 3) * 0.25];
+      var mw = s(t * 3);                                         // hai tay cùng cầm cán, đẩy lau qua lại
+      P.torso.r = [0.12, mw * 0.18, 0]; P.armR.r = [-0.85, 0, -0.28 + mw * 0.06]; P.armL.r = [-0.95, 0, 0.32 + mw * 0.06]; P.head.r[0] += 0.18;
+      if (P.props){ P.props.mop.p = [mw * 0.1, 0, 0]; P.props.mop.r = [0, mw * 0.22, 0]; }
     } else if (act === "vac"){
       var f = s(t * 2.5); P.torso.r = [0.25 + f * 0.05, 0, 0]; P.armR.r = [-0.9 - f * 0.25, 0, 0.2]; P.armL.r = [-0.6, 0, -0.2];
       if (P.props) P.props.vac.p = [0, 0, f * 0.12];
@@ -30062,7 +30116,7 @@
       P.armR.r = q < 2 ? [0, 0, 2.6] : [-1.4, 0, 0.6]; P.armL.r = q % 2 ? [0, 0, -0.4] : [-0.6, 0, -1.2];
       P.legL.r[2] = -s(t * 5) * 0.15; P.legR.r[2] = s(t * 5) * 0.15;
     } else if (act === "guitar"){
-      P.armR.r = [-0.7 + s(t * 10) * 0.18, 0.4, 0.3]; P.armL.r = [-1.2, -0.5, -0.9]; P.head.r[2] = s(t * 2) * 0.12; b.p[1] += Math.abs(s(t * 4)) * 0.02;
+      P.armR.r = [-0.75 + s(t * 10) * 0.12, 0, -0.42]; P.armL.r = [-1.15, 0, -0.55]; P.head.r[2] = s(t * 2) * 0.12; P.head.r[0] += 0.12; b.p[1] += Math.abs(s(t * 4)) * 0.02;
     } else if (act === "bow"){
       var bw = Math.max(0, s(t * 1.2)); P.torso.r = [bw * 0.75, 0, 0]; P.armR.r = [0.1, 0, 0.05]; P.armL.r = [0.1, 0, -0.05];
     } else if (act === "wave"){
@@ -30070,9 +30124,9 @@
     } else if (act === "cheer"){
       b.p[1] += Math.abs(s(t * 7)) * 0.15; P.armR.r = [0, 0, 2.7]; P.armL.r = [0, 0, -2.7];
     } else if (act === "clap"){
-      var c = Math.abs(s(t * 10)) * 0.3; P.armR.r = [-1.3, 0, 0.25 + c]; P.armL.r = [-1.3, 0, -0.25 - c];
+      var c = Math.abs(s(t * 9)) * 0.32; P.armR.r = [-1.35, 0, -0.62 + c]; P.armL.r = [-1.35, 0, 0.62 - c];      // hai bàn tay gặp nhau trước ngực
     } else if (act === "heart"){
-      P.armR.r = [-0.4, 0, 2.55]; P.armL.r = [-0.4, 0, -2.55]; P.head.r[2] = s(t * 2) * 0.1;
+      var hb = s(t * 3) * 0.04; P.armR.r = [-1.45 + hb, 0, -0.6]; P.armL.r = [-1.45 + hb, 0, 0.6]; P.head.r[2] = s(t * 2) * 0.1;   // hai tay chụm trước ngực thành hình trái tim
     } else if (act === "thumb"){
       P.armR.r = [-1.5, 0, 0.3]; P.head.r[2] = 0.12;
     } else if (act === "phone"){
@@ -30081,7 +30135,7 @@
       var sp = (s(t * 0.9 + sd) + 1) / 2, up = sp > 0.7 ? (sp - 0.7) * 3.3 : 0;
       P.armR.r = [-0.7 - up * 1.3, 0, 0.35 + up * 0.3]; if (up > 0.5) P.head.r[0] -= 0.15;
     } else if (act === "think"){
-      P.armR.r = [-2.3, 0, 0.7]; P.armL.r = [-0.9, 0, -0.6]; P.head.r[2] = 0.18; P.head.r[0] -= 0.1;
+      P.armR.r = [-2.3, 0, -0.4]; P.armL.r = [-1.05, 0, 0.55]; P.head.r[2] = 0.18; P.head.r[0] -= 0.1;   // tay phải chống cằm, tay trái đỡ khuỷu
     } else if (act === "stretch"){
       var st = (s(t * 1.2) + 1) / 2; P.armR.r = [0, 0, 2.9]; P.armL.r = [0, 0, -2.9]; P.torso.s[1] = 1 + st * 0.05; P.torso.r = [0, 0, s(t * 0.6) * 0.15];
     } else if (act === "sleep"){
@@ -30209,9 +30263,33 @@
     return '<div class="ofc-acts no-ei" id="ofcActs" role="toolbar" aria-label="' + escapeHTML(ot("actT")) + '">' + OFC_ACTS.map(function(a){
       return '<button type="button" data-ofcact="' + a[0] + '"><span>' + a[1] + '</span><small>' + escapeHTML(ot("act_" + a[0])) + '</small></button>'; }).join("") + '</div>';
   }
+  /** v57: ghế gần một điểm (phòng nghỉ + bàn khách) — [x, y, hướng] hoặc null. */
+  function ofcSeatNear(L, x, y, r){
+    var all = (L._seats || []).concat(L._cseats || []), best = null, bd = r;
+    all.forEach(function(s){ var dd = Math.hypot(s[0] - x, s[1] - y); if (dd <= bd){ bd = dd; best = s; } });
+    return best;
+  }
+  /** Ghế trống gần nhất cho mình (không ai đang ngồi / đang đi tới). */
+  function ofcFreeSeat(sc, me){
+    var L = sc.L, all = (L._seats || []).concat(L._cseats || []);
+    var busy = Object.keys(sc.ents).filter(function(id){ return sc.ents[id] !== me; }).map(function(id){ var e = sc.ents[id]; return e.goal || [e.x, e.y]; });
+    var ok = all.filter(function(s){ return !busy.some(function(b){ return Math.hypot(b[0] - s[0], b[1] - s[1]) < 30; }); });
+    ok.sort(function(a, b){ return Math.hypot(a[0] - me.x, a[1] - me.y) - Math.hypot(b[0] - me.x, b[1] - me.y); });
+    return ok[0] || null;
+  }
   function ofcDoAct(a){
     var sc = OFC.sc, d = OFC.d, me = sc && d && sc.ents[d.me]; if (!me) return;
     var t = (performance.now() - sc.t0) / 1000;
+    // v57: "ngồi" → tự đi tới ghế trống gần nhất rồi mới ngồi (trước đây ngồi bệt giữa sàn)
+    if (a === "sit" && me.act !== "sit" && !ofcSeatNear(sc.L, me.x, me.y, 15)){
+      var st = ofcFreeSeat(sc, me);
+      if (st){
+        var q = sc.nav.nearest(st[0], st[1]);
+        ofcSetAct(me, "", t); me.free = true; me.goal = [st[0], st[1]]; me.path = sc.nav.path(me.x, me.y, q[0], q[1]); me.mode = "walk"; me.pendAct = "sit"; me.actEnd = 0;
+        document.querySelectorAll("[data-ofcact]").forEach(function(b){ b.classList.toggle("is-on", b.getAttribute("data-ofcact") === "sit"); });
+        OFC_LV.last = ""; ofcLiveTick(); return;
+      }
+    }
     if (me.act === a){ ofcSetAct(me, "", t); }
     else {
       if (me.mode === "walk"){ me.pendAct = a; }
@@ -30448,7 +30526,7 @@
       cogsAct: "実原価", cogsTheo: "理論原価", notes: "所見", none: "データなし", src: "データ: WingArc（Dr.Sum）CSV・シフト・打刻・発注・棚卸",
       nUp: "売上は前月比 {p} 増加しました。", nDown: "売上は前月比 {p} 減少しました。", nBestDow: "最も売上が高い曜日は{d}曜日（平均 {y}）。", nPeak: "ピークは {h}時台（1日平均 {y}）。",
       nLabor: "人件費率は {p}（目標 {t}）です。", nLaborHi: "人件費率が目標 {t} を上回っています。シフトの見直しをおすすめします。", nMh: "人時売上は {y}/時間 です。",
-      nGap: "シフトと実績の差は {h} 時間です。", page: "{a} / {b}" },
+      nGap: "シフトと実績の差は {h} 時間です。", page: "{a} / {b}", guest: "応援", gHelp: "{s}より応援", supOut: "他店への応援 {h}時間（当店の人件費には含みません）", gNote: "応援スタッフはシフト時間で計上", more: "ほか{n}名", bad: "このリンクは無効になりました。お店の管理者に新しいリンクをお尋ねください。", month: "対象月", print: "印刷", pdf: "PDF保存", pdfDl: "PDFをダウンロード", loading: "読み込み中…", viewOnly: "閲覧専用" },
     vi: { title: "Báo cáo tháng của quán", sub: "Gửi chủ quán", made: "Ngày lập", rev: "Doanh thu", cust: "Lượt khách", avg: "Chi tiêu / khách", labor: "Tỷ lệ nhân công", mh: "Doanh thu / giờ công", cogs: "Tỷ lệ giá vốn", fl: "Tỷ lệ FL",
       prev: "So tháng trước", days: "{n} ngày", dRev: "Doanh thu theo ngày", dRevPrev: "Tháng trước (cùng ngày)", dow: "Trung bình theo thứ", dowRev: "Doanh thu", dowCust: "Khách", hourly: "Doanh thu theo giờ (TB một ngày)",
       chan: "Cơ cấu (ăn tại quán / mang đi / giao hàng)", eat: "Ăn tại quán", take: "Mang đi", deli: "Giao hàng", top: "Món bán chạy (sandwich)", item: "Món", qty: "Số lượng", share: "Tỉ lệ",
@@ -30457,7 +30535,7 @@
       cogsAct: "Giá vốn thực", cogsTheo: "Giá vốn lý thuyết", notes: "Nhận xét", none: "Chưa có dữ liệu", src: "Nguồn: CSV WingArc (Dr.Sum), lịch ca, điểm danh, phiếu đặt hàng, kiểm kê",
       nUp: "Doanh thu tăng {p} so với tháng trước.", nDown: "Doanh thu giảm {p} so với tháng trước.", nBestDow: "Thứ bán tốt nhất: {d} (TB {y}).", nPeak: "Giờ cao điểm: {h} giờ (TB {y}/ngày).",
       nLabor: "Tỷ lệ nhân công {p} (mục tiêu {t}).", nLaborHi: "Tỷ lệ nhân công cao hơn mục tiêu {t} — nên xem lại lịch ca.", nMh: "Doanh thu / giờ công: {y}.",
-      nGap: "Chênh lệch giữa xếp ca và thực tế: {h} giờ.", page: "{a} / {b}" },
+      nGap: "Chênh lệch giữa xếp ca và thực tế: {h} giờ.", page: "{a} / {b}", guest: "Chi viện", gHelp: "chi viện từ {s}", supOut: "Nhân viên quán đi chi viện quán khác {h} giờ (không tính vào chi phí quán này)", gNote: "Người chi viện tính theo giờ xếp ca", more: "và {n} người khác", bad: "Link này không còn hiệu lực. Hãy hỏi quản lý quán link mới.", month: "Tháng", print: "In", pdf: "Lưu PDF", pdfDl: "Tải PDF", loading: "Đang tải…", viewOnly: "Chỉ xem" },
     en: { title: "Monthly store report", sub: "For the owner", made: "Created", rev: "Sales", cust: "Guests", avg: "Avg. ticket", labor: "Labor ratio", mh: "Sales / labor hr", cogs: "Food cost", fl: "FL ratio",
       prev: "vs last month", days: "{n} days", dRev: "Daily sales", dRevPrev: "Last month (same day)", dow: "Average by weekday", dowRev: "Sales", dowCust: "Guests", hourly: "Sales by hour (daily avg.)",
       chan: "Channel mix (eat-in / take-out / delivery)", eat: "Eat-in", take: "Take-out", deli: "Delivery", top: "Best sellers (sandwiches)", item: "Item", qty: "Qty", share: "Share",
@@ -30466,7 +30544,7 @@
       cogsAct: "Actual food cost", cogsTheo: "Theoretical food cost", notes: "Highlights", none: "No data", src: "Sources: WingArc (Dr.Sum) CSV, schedule, time clock, orders, stock count",
       nUp: "Sales rose {p} vs last month.", nDown: "Sales fell {p} vs last month.", nBestDow: "Best weekday: {d} (avg {y}).", nPeak: "Peak hour: {h}:00 (avg {y}/day).",
       nLabor: "Labor ratio {p} (target {t}).", nLaborHi: "Labor ratio is above the {t} target — consider adjusting the schedule.", nMh: "Sales per labor hour: {y}.",
-      nGap: "Scheduled vs actual hours differ by {h} h.", page: "{a} / {b}" }
+      nGap: "Scheduled vs actual hours differ by {h} h.", page: "{a} / {b}", guest: "Support", gHelp: "support from {s}", supOut: "Our staff helped other stores {h} h (not counted here)", gNote: "Support staff counted by scheduled hours", more: "+{n} more", bad: "This link is no longer valid. Please ask the store manager for a new link.", month: "Month", print: "Print", pdf: "Save PDF", pdfDl: "Download PDF", loading: "Loading…", viewOnly: "View only" }
   };
   var OR_DOW = { ja: ["日", "月", "火", "水", "木", "金", "土"], vi: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"], en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] };
   function orLang(){ var l = lsGet("sbw.orlang"); return OR_TX[l] ? l : "ja"; }
@@ -30547,24 +30625,66 @@
   function ownerTicketHTML(){
     var L = orLang();
     return '<div class="ticket or-ticket" id="orBox"><h3>📊 ' + escapeHTML(ot("orTitle")) + ' <span class="sub">' + escapeHTML(ot("orSub")) + '</span></h3>' +
-      '<div class="or-row"><button type="button" class="btn" data-orep="open">📄 ' + escapeHTML(ot("orOpen", { m: state.month })) + '</button>' +
+      '<div class="or-acts"><button type="button" class="btn or-main" data-orep="open">📄 ' + escapeHTML(ot("orOpen", { m: state.month })) + '</button>' +
+      '<button type="button" class="btn ghost" data-orep="link">🔗 ' + escapeHTML(ot("orLink")) + '</button>' +
       '<label class="btn ghost or-file">📥 ' + escapeHTML(ot("waImport")) + '<input type="file" accept=".csv,.txt,.tsv,.xlsx,.xls" multiple data-orep="file" hidden></label>' +
       '<button type="button" class="btn ghost" data-orep="bot">🤖 ' + escapeHTML(ot("waBot")) + '</button></div>' +
-      '<div class="or-lang ofc-seg">' + [["ja", "日本語"], ["vi", "Tiếng Việt"], ["en", "English"]].map(function(x){ return '<button type="button" data-orlang="' + x[0] + '" class="' + (L === x[0] ? "is-on" : "") + '">' + x[1] + '</button>'; }).join("") + '</div>' +
+      '<div class="or-lang ofc-seg" role="group" aria-label="' + escapeHTML(ot("orLang")) + '"><span>' + escapeHTML(ot("orLang")) + '</span>' + [["ja", "日本語"], ["vi", "Tiếng Việt"], ["en", "English"]].map(function(x){ return '<button type="button" data-orlang="' + x[0] + '" class="' + (L === x[0] ? "is-on" : "") + '">' + x[1] + '</button>'; }).join("") + '</div>' +
       '<div class="hint">' + escapeHTML(ot("orHint")) + '</div></div>';
   }
   document.addEventListener("click", function(ev){
     var b = ev.target.closest && ev.target.closest("[data-orep],[data-orlang]"); if (!b || b.tagName === "INPUT") return;
-    if (b.hasAttribute("data-orlang")){ lsSet("sbw.orlang", b.getAttribute("data-orlang")); document.querySelectorAll("[data-orlang]").forEach(function(x){ x.classList.toggle("is-on", x === b); }); return; }
+    if (b.hasAttribute("data-orlang")){
+      lsSet("sbw.orlang", b.getAttribute("data-orlang")); document.querySelectorAll("[data-orlang]").forEach(function(x){ x.classList.toggle("is-on", x === b); });
+      if (OR.key && OR.r) orvPaint();
+      return;
+    }
     var a = b.getAttribute("data-orep");
     if (a === "open") ownerReportOpen(yearMonthStr(state.year, state.month));
     else if (a === "bot") waBotDialog();
+    else if (a === "link") ownerLinkDialog();
   });
   document.addEventListener("change", async function(ev){
     var i = ev.target; if (!i || i.getAttribute("data-orep") !== "file" || !i.files || !i.files.length) return;
     var fs = Array.prototype.slice.call(i.files); i.value = "";
     await waImportFiles(fs);
   });
+
+  /** v57: link cố định cho chủ quán (chỉ xem). */
+  async function ownerLinkDialog(){
+    var info = null;
+    try { info = await call("ownerLink", ""); } catch (e){ showToast((e && e.message) || t("saveErrorToast"), true); return; }
+    function body(){
+      if (!info.on) return '<p>' + escapeHTML(ot("orLinkHow")) + '</p><div class="or-row"><button type="button" class="btn" id="orLinkMake">🔗 ' + escapeHTML(ot("orLinkMake")) + '</button></div>';
+      var u = info.url;
+      return '<p>' + escapeHTML(ot("orLinkHow")) + '</p>' +
+        (u ? '<div class="or-linkbox"><input type="text" readonly id="orLinkUrl" value="' + escapeHTML(u) + '"><button type="button" class="btn" id="orLinkCopy">' + escapeHTML(ot("orLinkCopy")) + '</button></div>' +
+             '<div class="or-row">' + (navigator.share ? '<button type="button" class="btn ghost" id="orLinkShare">📤 ' + escapeHTML(ot("orLinkShare")) + '</button>' : '') +
+             '<a class="btn ghost" id="orLinkOpen" href="' + escapeHTML(u) + '" target="_blank" rel="noopener">↗ ' + escapeHTML(ot("orLinkOpen")) + '</a></div>'
+           : '<p class="hint">' + escapeHTML(ot("orLinkNoFront")) + '</p>') +
+        '<p class="hint">' + escapeHTML(ot("orLinkSafe")) + (info.seen ? ' · ' + escapeHTML(ot("orLinkSeen", { t: new Date(info.seen).toLocaleString() })) : '') + '</p>' +
+        '<div class="or-row"><button type="button" class="btn ghost" id="orLinkNew">↻ ' + escapeHTML(ot("orLinkNew")) + '</button><button type="button" class="btn ghost or-off" id="orLinkOff">' + escapeHTML(ot("orLinkOff")) + '</button></div>';
+    }
+    await uiDialog({ title: "🔗 " + ot("orLink"), html: '<div class="or-link" id="orLinkBody">' + body() + '</div>', hideCancel: true, okText: ot("close"),
+      onOpen: function(back){
+        var host = back.querySelector("#orLinkBody");
+        async function act(a, confirmMsg){
+          if (confirmMsg && !(await uiConfirmLite(confirmMsg))) return;
+          try { info = await call("ownerLink", a); host.innerHTML = body(); wire(); if (a === "off") showToast(ot("orLinkOffDone")); }
+          catch (e){ showToast((e && e.message) || t("saveErrorToast"), true); }
+        }
+        function wire(){
+          var q = function(id){ return host.querySelector(id); };
+          if (q("#orLinkMake")) q("#orLinkMake").addEventListener("click", function(){ act("new"); });
+          if (q("#orLinkNew")) q("#orLinkNew").addEventListener("click", function(){ act("new", ot("orLinkNewQ")); });
+          if (q("#orLinkOff")) q("#orLinkOff").addEventListener("click", function(){ act("off", ot("orLinkOffQ")); });
+          if (q("#orLinkCopy")) q("#orLinkCopy").addEventListener("click", function(){ var i = q("#orLinkUrl"); try { navigator.clipboard.writeText(i.value).then(function(){ showToast(ot("orLinkCopied")); }, function(){ i.select(); document.execCommand("copy"); showToast(ot("orLinkCopied")); }); } catch (e){ i.select(); try { document.execCommand("copy"); showToast(ot("orLinkCopied")); } catch (e2){} } });
+          if (q("#orLinkShare")) q("#orLinkShare").addEventListener("click", function(){ try { navigator.share({ title: (state.settings && state.settings.storeName) || "SUBWAY", text: orT("title"), url: info.url }); } catch (e){} });
+        }
+        wire();
+      } });
+  }
+  function uiConfirmLite(msg){ return uiDialog({ title: msg, message: "", okText: "OK", cancelText: t("cancelBtn") }); }
 
   async function waBotDialog(){
     var st = null; try { st = await call("waBotStatus"); } catch (e){}
@@ -30592,12 +30712,13 @@
   function orDelta(a, b){ if (!b || !a) return ""; var p = (a - b) / b * 100; return '<em class="' + (p >= 0 ? "up" : "dn") + '">' + (p >= 0 ? "▲ " : "▼ ") + Math.abs(Math.round(p * 10) / 10).toFixed(1) + "%</em>"; }
   function orBars(vals, opt){
     opt = opt || {};
-    var n = vals.length || 1, W = 640, H = opt.h || 150, mx = Math.max.apply(null, vals.map(function(v){ return Math.max(v.v || 0, v.p || 0); }).concat([1]));
+    var n = vals.length || 1, W = 640, H = opt.h || 150, mx = Math.max.apply(null, vals.map(function(v){ return Math.max((v.v || 0) + (v.v2 || 0), v.p || 0); }).concat([1]));
     var bw = W / n, out = '<svg class="or-svg" viewBox="0 0 ' + W + ' ' + (H + 18) + '" xmlns="http://www.w3.org/2000/svg">';
     [0.25, 0.5, 0.75, 1].forEach(function(f){ out += '<line x1="0" x2="' + W + '" y1="' + (H - H * f) + '" y2="' + (H - H * f) + '" stroke="#E5E7EB" stroke-width="1"/>'; });
     vals.forEach(function(v, i){
       var h = (v.v || 0) / mx * (H - 6), x0 = i * bw + bw * 0.16;
       out += '<rect x="' + x0.toFixed(1) + '" y="' + (H - h).toFixed(1) + '" width="' + (bw * 0.68).toFixed(1) + '" height="' + h.toFixed(1) + '" rx="2" fill="' + (v.c || "#16884D") + '"/>';
+      if (v.v2){ var h2 = v.v2 / mx * (H - 6); out += '<rect x="' + x0.toFixed(1) + '" y="' + (H - h - h2).toFixed(1) + '" width="' + (bw * 0.68).toFixed(1) + '" height="' + h2.toFixed(1) + '" rx="2" fill="' + (v.c2 || "#F2A541") + '"/>'; }
       if (v.p){ var ph = v.p / mx * (H - 6); out += '<circle cx="' + (i * bw + bw / 2).toFixed(1) + '" cy="' + (H - ph).toFixed(1) + '" r="2.4" fill="#F2A541"/>'; }
       if (n <= 16 || i % 2 === 0 || i === n - 1) out += '<text x="' + (i * bw + bw / 2).toFixed(1) + '" y="' + (H + 13) + '" font-size="9" text-anchor="middle" fill="' + (v.tc || "#6B7280") + '">' + escapeHTML(String(v.x)) + '</text>';
     });
@@ -30607,6 +30728,10 @@
     var R, D;
     try { R = await call("ownerReport", ym); D = BIZ.data[ym] || await call("bizLoad", ym); BIZ.data[ym] = D; }
     catch (e){ showToast((e && e.message) || t("saveErrorToast"), true); return; }
+    var y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7));
+    await docPreview("📊 " + orT("title") + " " + y + "/" + pad(m), ownerReportHTML(R, D, ym), false);
+  }
+  function ownerReportHTML(R, D, ym){
     var L = orLang(), DOW = OR_DOW[L], y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)), nd = new Date(y, m, 0).getDate();
     var wa = (R.wa && R.wa.d) || {}, waP = (R.waPrev && R.waPrev.d) || {}, sales = (D.sales && D.sales.d) || {}, salesP = (R.salesPrev && R.salesPrev.d) || {};
     function revOf(d){ return (wa[d] && wa[d].rev) || sales[d] || 0; }
@@ -30618,6 +30743,10 @@
       rows.push({ d: d, w: w, rev: r0, revP: revPOf(d), cust: (wa[d] && wa[d].cust) || 0, h: wa[d] && wa[d].h, eat: wa[d] && wa[d].eat, take: wa[d] && wa[d].take, deli: wa[d] && wa[d].deli });
     }
     var schH = 0, actH = 0; Object.keys(R.sched || {}).forEach(function(k){ schH += R.sched[k]; }); Object.keys(R.att || {}).forEach(function(k){ actH += R.att[k]; });
+    // v57: người quán khác tới chi viện → cộng vào giờ làm của quán (theo giờ xếp ca); ca mình đi chi viện quán khác → không tính
+    var guests = R.guests || [], gH = guests.reduce(function(a, g){ return a + (g.h || 0); }, 0), gDay = R.guestDay || {};
+    var supOutH = 0; Object.keys(R.supOut || {}).forEach(function(k){ supOutH += R.supOut[k]; });
+    schH += gH; if (actH) actH += gH;
     var useH = actH || schH, wage = R.wage || 0, labor = wage * useH;
     var C = null; try { C = bizCalc(D); } catch (e){}
     var buy = 0; try { buy = bizBuysYen(D); } catch (e){}
@@ -30649,6 +30778,7 @@
       '.or-n{margin:0;padding-left:16px;}.or-n li{margin:2px 0;}.or-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}.or-src{position:absolute;left:17mm;bottom:7mm;font-size:7pt;color:#9CA3AF;}' +
       '.or-pno{position:absolute;right:17mm;bottom:7mm;font-size:8pt;color:#6B7280;}.or-leg{font-size:7.5pt;color:#6B7280;}.or-leg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin:0 3px 0 8px;vertical-align:0;}' +
       '.or-bar{height:9px;border-radius:3px;background:#16884D;display:inline-block;vertical-align:-1px;}.or-none{color:#9CA3AF;font-size:8.5pt;}' +
+      '.or-staff td small{display:block;font-size:7pt;color:#9CA3AF;line-height:1.2;}.or-tag{display:inline-block;font-size:6.5pt;font-weight:700;color:#8A5A00;background:#FDF0D5;border-radius:3px;padding:0 3px;margin-right:4px;vertical-align:1px;}' +
       '</style>';
     var head = '<div class="or-hd"><div><h1>' + escapeHTML(orT("title")) + '</h1><small>' + escapeHTML(R.store) + ' · ' + escapeHTML(orT("sub")) + '</small></div><div class="or-m">' + y + '/' + pad(m) +
       '<small>' + escapeHTML(orT("made")) + ' ' + new Date().toLocaleDateString(L === "en" ? "en-US" : "ja-JP") + '</small></div></div>';
@@ -30679,10 +30809,17 @@
       top.map(function(x, i){ return '<tr><td>' + (i + 1) + '</td><td style="text-align:left">' + escapeHTML(x.n) + '</td><td>' + Math.round(x.q).toLocaleString() + '</td><td>' + orPct(x.q, units) + '</td></tr>'; }).join("") + '</tbody></table>' : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') + '</div></div>';
     // trang 3: giờ công từng người + nguyên liệu
     var emps = (R.emps || []).filter(function(e){ return R.sched[e.id] || R.att[e.id]; }).sort(function(a, b){ return (R.sched[b.id] || 0) - (R.sched[a.id] || 0); });
-    var p3 = '<div class="or-2"><div class="or-s"><h2>' + escapeHTML(orT("staff")) + '</h2>' + (emps.length ? '<table class="or-t"><thead><tr><th>' + escapeHTML(orT("name")) + '</th><th>' + escapeHTML(orT("sch")) + '</th>' + (R.attOn ? '<th>' + escapeHTML(orT("act")) + '</th><th>' + escapeHTML(orT("diff")) + '</th>' : '') + '</tr></thead><tbody>' +
-      emps.slice(0, 26).map(function(e){ var a = R.sched[e.id] || 0, b = R.att[e.id] || 0; return '<tr><td>' + escapeHTML(e.name) + '</td><td>' + a.toFixed(1) + '</td>' + (R.attOn ? '<td>' + b.toFixed(1) + '</td><td>' + (b - a >= 0 ? "+" : "") + (b - a).toFixed(1) + '</td>' : '') + '</tr>'; }).join("") +
+    var gRows = guests.slice().sort(function(a, b){ return b.h - a.h; }), MAXR = 22, eShow = emps.slice(0, Math.max(6, MAXR - Math.min(gRows.length, 6))), gShow = gRows.slice(0, MAXR - eShow.length);
+    var restE = emps.slice(eShow.length), restG = gRows.slice(gShow.length);
+    var p3 = '<div class="or-2"><div class="or-s"><h2>' + escapeHTML(orT("staff")) + '</h2>' + (emps.length || gRows.length ? '<table class="or-t or-staff"><thead><tr><th>' + escapeHTML(orT("name")) + '</th><th>' + escapeHTML(orT("sch")) + '</th>' + (R.attOn ? '<th>' + escapeHTML(orT("act")) + '</th><th>' + escapeHTML(orT("diff")) + '</th>' : '') + '</tr></thead><tbody>' +
+      eShow.map(function(e){ var a = R.sched[e.id] || 0, b = R.att[e.id] || 0; return '<tr><td>' + escapeHTML(e.name) + '</td><td>' + a.toFixed(1) + '</td>' + (R.attOn ? '<td>' + b.toFixed(1) + '</td><td>' + (b - a >= 0 ? "+" : "") + (b - a).toFixed(1) + '</td>' : '') + '</tr>'; }).join("") +
+      (restE.length ? (function(){ var a = 0, b = 0; restE.forEach(function(e){ a += R.sched[e.id] || 0; b += R.att[e.id] || 0; }); return '<tr><td>' + escapeHTML(orT("more", { n: restE.length })) + '</td><td>' + a.toFixed(1) + '</td>' + (R.attOn ? '<td>' + b.toFixed(1) + '</td><td>' + (b - a >= 0 ? "+" : "") + (b - a).toFixed(1) + '</td>' : '') + '</tr>'; })() : '') +
+      gShow.map(function(g){ return '<tr class="or-g"><td><span class="or-tag">' + escapeHTML(orT("guest")) + '</span>' + escapeHTML(g.name) + '<small>' + escapeHTML(orT("gHelp", { s: String(g.store || "").replace(/^SUBWAY\s*/, "") })) + '</small></td><td>' + g.h.toFixed(1) + '</td>' + (R.attOn ? '<td>' + g.h.toFixed(1) + '</td><td>—</td>' : '') + '</tr>'; }).join("") +
+      (restG.length ? '<tr class="or-g"><td><span class="or-tag">' + escapeHTML(orT("guest")) + '</span>' + escapeHTML(orT("more", { n: restG.length })) + '</td><td>' + restG.reduce(function(a, g){ return a + g.h; }, 0).toFixed(1) + '</td>' + (R.attOn ? '<td></td><td></td>' : '') + '</tr>' : '') +
       '</tbody><tfoot><tr><td>' + escapeHTML(orT("total")) + '</td><td>' + schH.toFixed(1) + '</td>' + (R.attOn ? '<td>' + actH.toFixed(1) + '</td><td>' + (actH - schH >= 0 ? "+" : "") + (actH - schH).toFixed(1) + '</td>' : '') + '</tr></tfoot></table>' +
-      (wage ? '<div class="or-leg">' + escapeHTML(orT("wage", { y: orYen(wage) })) + ' · ' + escapeHTML(orT("laborCost")) + ' ' + orYen(labor) + '</div>' : '') : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') + '</div>';
+      (wage ? '<div class="or-leg">' + escapeHTML(orT("wage", { y: orYen(wage) })) + ' · ' + escapeHTML(orT("laborCost")) + ' ' + orYen(labor) + '</div>' : '') +
+      (gRows.length ? '<div class="or-leg">' + escapeHTML(orT("gNote")) + '</div>' : '') +
+      (supOutH ? '<div class="or-leg">' + escapeHTML(orT("supOut", { h: (Math.round(supOutH * 10) / 10).toFixed(1) })) + '</div>' : '') : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') + '</div>';
     var ings = C ? C.ings.filter(function(x){ return x.serv > 0; }).sort(function(a, b){ return (b.yen || 0) - (a.yen || 0) || b.serv - a.serv; }).slice(0, 16) : [];
     p3 += '<div class="or-s"><h2>' + escapeHTML(orT("ing")) + '</h2>' + (ings.length ? '<table class="or-t"><thead><tr><th>' + escapeHTML(orT("name")) + '</th><th>' + escapeHTML(orT("serv")) + '</th><th>' + escapeHTML(orT("packs")) + '</th><th>' + escapeHTML(orT("yen")) + '</th></tr></thead><tbody>' +
       ings.map(function(x){ return '<tr><td>' + escapeHTML(String(x.name).slice(0, 22)) + '</td><td>' + Math.round(x.serv).toLocaleString() + '</td><td>' + (x.packs != null ? (Math.round(x.packs * 10) / 10) : "—") + '</td><td>' + (x.yen != null ? orYen(x.yen) : "—") + '</td></tr>'; }).join("") + '</tbody></table>' : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') +
@@ -30692,9 +30829,55 @@
       '<tr><td><b>' + escapeHTML(orT("cogsAct")) + '</b></td><td><b>' + (cogsAct !== null ? orYen(cogsAct) + (rev ? " (" + orPct(cogsAct, rev) + ")" : "") : "—") + '</b></td></tr>' +
       '<tr><td>' + escapeHTML(orT("cogsTheo")) + '</td><td>' + (cogsTheo ? orYen(cogsTheo) + (rev ? " (" + orPct(cogsTheo, rev) + ")" : "") : "—") + '</td></tr></tbody></table></div></div>';
     var sd = R.schedDay || {};
-    p3 += '<div class="or-s"><h2>' + escapeHTML(orT("hrsDay")) + '</h2>' + (schH ? orBars(rows.map(function(x){ return { x: x.d, v: sd[x.d] || 0, c: "#3FA7A3", tc: x.w === 0 ? "#E35D5B" : (x.w === 6 ? "#4D7FD6" : "#6B7280") }; }), { h: 90 }) : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') + '</div>';
-    var html = page(1, 3, p1) + page(2, 3, p2) + page(3, 3, p3);
-    await docPreview("📊 " + orT("title") + " " + y + "/" + pad(m), html, false);
+    p3 += '<div class="or-s"><h2>' + escapeHTML(orT("hrsDay")) + '</h2>' + (schH ? orBars(rows.map(function(x){ return { x: x.d, v: sd[x.d] || 0, v2: gDay[x.d] || 0, c: "#3FA7A3", c2: "#F2A541", tc: x.w === 0 ? "#E35D5B" : (x.w === 6 ? "#4D7FD6" : "#6B7280") }; }), { h: 90 }) +
+      (gH ? '<div class="or-leg"><i style="background:#3FA7A3"></i>' + escapeHTML(orT("sch")) + '<i style="background:#F2A541"></i>' + escapeHTML(orT("guest")) + '</div>' : '') : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') + '</div>';
+    return page(1, 3, p1) + page(2, 3, p2) + page(3, 3, p3);
+  }
+
+  // ---- v57: TRANG CHỦ QUÁN (mở bằng link ?or=…, không đăng nhập, chỉ xem) ----
+  var OR = { key: "", ym: "", r: null, d: null, months: [], err: "", fitOn: false };
+  async function renderOwnerView(ym){
+    document.body.classList.add("or-mode");
+    try { hideSplash(); } catch (e){}
+    if (!lsGet("sbw.orlang")){ var nl = String(navigator.language || "ja").toLowerCase(); lsSet("sbw.orlang", /^vi/.test(nl) ? "vi" : /^en/.test(nl) ? "en" : "ja"); }
+    if (!OR.r || ym){
+      app.innerHTML = '<div class="orv"><div class="orv-msg">' + escapeHTML(orT("loading")) + '</div></div>';
+      try { var v = await gsRun("ownerView", OR.key, ym || OR.ym || ""); OR.r = v.r; OR.d = v.d; OR.ym = v.ym; OR.months = v.months || [v.ym]; OR.err = ""; }
+      catch (e){ OR.err = (e && e.message) || "x"; }
+    }
+    orvPaint();
+  }
+  function orvPaint(){
+    var L = orLang();
+    if (OR.err){
+      app.innerHTML = '<div class="orv"><div class="orv-msg orv-bad"><b>🔒</b>' + escapeHTML(/hiệu lực|valid|無効/i.test(OR.err) ? orT("bad") : OR.err) + '</div></div>';
+      return;
+    }
+    var html = ownerReportHTML(OR.r, OR.d, OR.ym), y = OR.ym.slice(0, 4), m = Number(OR.ym.slice(5, 7));
+    var opts = OR.months.map(function(x){ return '<option value="' + x + '"' + (x === OR.ym ? " selected" : "") + '>' + x.slice(0, 4) + '/' + pad(Number(x.slice(5, 7))) + '</option>'; }).join("");
+    app.innerHTML = '<div class="orv"><header class="orv-bar no-ei">' +
+      '<div class="orv-t"><b>📊 ' + escapeHTML(orT("title")) + '</b><small>' + escapeHTML(OR.r.store || "SUBWAY") + ' · ' + escapeHTML(orT("viewOnly")) + '</small></div>' +
+      '<div class="orv-ctl"><label class="orv-m"><span>' + escapeHTML(orT("month")) + '</span><select id="orvMonth">' + opts + '</select></label>' +
+      '<div class="or-lang ofc-seg">' + [["ja", "日本語"], ["vi", "Tiếng Việt"], ["en", "English"]].map(function(x){ return '<button type="button" data-orlang="' + x[0] + '" class="' + (L === x[0] ? "is-on" : "") + '">' + x[1] + '</button>'; }).join("") + '</div>' +
+      '<button type="button" class="btn ghost" id="orvPrint">🖨 ' + escapeHTML(orT("print")) + '</button><button type="button" class="btn" id="orvPdf">' + escapeHTML(orT("pdf")) + '</button><span id="orvPdfOut"></span></div></header>' +
+      '<main class="orv-pages or-view"><div class="doc-prev" id="orvPrev">' + html + '</div></main></div>';
+    document.title = orT("title") + " " + y + "/" + pad(m) + " · " + (OR.r.store || "SUBWAY");
+    var sel = document.getElementById("orvMonth");
+    sel.addEventListener("change", function(){ renderOwnerView(sel.value); });
+    document.getElementById("orvPrint").addEventListener("click", function(){ docPrint(html, false); });
+    var pb = document.getElementById("orvPdf");
+    pb.addEventListener("click", async function(){
+      var r = await docPdfMake(orT("title") + " " + y + "-" + pad(m), html, pb);
+      var o = document.getElementById("orvPdfOut");
+      if (r && o) o.innerHTML = '<a class="btn" href="' + r.url + '" download="' + escapeHTML(r.file) + '">' + escapeHTML(orT("pdfDl")) + '</a>';
+    });
+    orvFit();
+    if (!OR.fitOn){ OR.fitOn = true; window.addEventListener("resize", orvFit); }
+  }
+  function orvFit(){
+    var w = document.querySelector(".orv-pages"), pv = document.getElementById("orvPrev"); if (!w || !pv) return;
+    var cs = getComputedStyle(w), W = w.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0) - 2;
+    pv.style.zoom = Math.min(1, W / 794);
   }
 /*OFC_JS_END*/
   function renderStaff(){
@@ -31357,7 +31540,7 @@
           if (r && o) o.innerHTML = '<a class="btn" href="' + r.url + '" download="' + escapeHTML(r.file) + '">' + escapeHTML(t("pdfDlBtn")) + '</a>';
         });
         var wrap = back.querySelector(".doc-prev-wrap"), pv = back.querySelector(".doc-prev");
-        var fit = function(){ var W = wrap.clientWidth - 4, base = landscape ? 1123 : 794; pv.style.zoom = Math.min(1, W / base); };
+        var fit = function(){ var cs = getComputedStyle(wrap), W = wrap.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0) - 2, base = landscape ? 1123 : 794; pv.style.zoom = Math.min(1, W / base); };   // v57: trừ lề trong của khung (trước đây trang A4 bị cắt mép phải trên điện thoại)
         fit(); setTimeout(fit, 60);
       },
       collect: function(){ printed = true; return {}; }
@@ -35202,6 +35385,7 @@
       PF.v = snap ? 1 : 0;
       try { dk = await readDk(); } catch (e){ dk = null; }
       if (AP.key){ bootPreviewEnd(false); hideSplash(); state._booted = true; await renderApply(); return; }
+      if (OR.key){ bootPreviewEnd(false); hideSplash(); state._booted = true; await renderOwnerView(); return; }
       var tb0 = performance.now(), mdk = lsGet(MDK_KEY);               // v45: máy quản lý đã ghi nhớ
       for (;;){
         try{
@@ -35258,6 +35442,7 @@
       if (dk){ note = boot && boot.sessionErr; if (note !== "data") clearDk(); }   // v41: lỗi dữ liệu tạm thời → giữ máy đã ghi nhớ
       state._booted = true;
       if (AP.key){ await renderApply(); return; }
+      if (OR.key){ await renderOwnerView(); return; }
       renderLogin();
       if (mNote === "revoked" || mNote === "expired") showToast(t("mgrSessGone"), true);
       if (note === "revoked") showToast(t("sessRevoked"), true);

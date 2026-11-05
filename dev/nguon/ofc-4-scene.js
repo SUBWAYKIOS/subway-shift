@@ -114,6 +114,10 @@
           if (!e.free) e.ty = e.spot.yaw;
           if (e.self && e.free) e.ty = Math.PI;
           if (e.free && e.endYaw != null && !e.self){ e.ty = e.endYaw; e.endYaw = null; }
+          if (e.pendAct === "sit"){                                  // v57: tới ghế → ngồi đúng chỗ, quay đúng hướng ghế
+            var stS = ofcSeatNear(L, e.goal ? e.goal[0] : e.x, e.goal ? e.goal[1] : e.y, 60);
+            if (stS){ e.x = stS[0]; e.y = stS[1]; e.ty = stS[2]; e.endYaw = null; }
+          }
           if (e.pendAct != null){ ofcSetAct(e, e.pendAct, t); e.pendAct = null; }
         }
       }
@@ -127,7 +131,7 @@
       P.root.p[0] = lx(L, e.x); P.root.p[2] = lz(L, e.y); P.root.r[1] = e.yaw;
       var md = e.mode, act = md === "walk" ? "" : (e.act || "");
       if (act === "sit") md = "brk";
-      var ex = { seed: e.seed, look: md === "walk" ? 0 : -0.16, seatH: (e.spot && e.spot.seat && !e.free) || e.kind === "brk" && !e.free ? 0.33 : (act === "sit" ? 0.07 : 0.33) };
+      var ex = { seed: e.seed, look: md === "walk" ? 0 : -0.16, seatH: (e.spot && e.spot.seat && !e.free) || e.kind === "brk" && !e.free ? 0.33 : (act === "sit" ? (ofcSeatNear(L, e.x, e.y, 12) ? 0.33 : 0.07) : 0.33) };
       if (e.wave && t < e.wave && !act) ex.wave = 1;
       if (e.jumpAt && t - e.jumpAt < 0.7) ex.jump = (t - e.jumpAt) / 0.7;
       avAnimate(P, md, t, ex);

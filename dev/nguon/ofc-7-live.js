@@ -118,9 +118,33 @@
     return '<div class="ofc-acts no-ei" id="ofcActs" role="toolbar" aria-label="' + escapeHTML(ot("actT")) + '">' + OFC_ACTS.map(function(a){
       return '<button type="button" data-ofcact="' + a[0] + '"><span>' + a[1] + '</span><small>' + escapeHTML(ot("act_" + a[0])) + '</small></button>'; }).join("") + '</div>';
   }
+  /** v57: ghế gần một điểm (phòng nghỉ + bàn khách) — [x, y, hướng] hoặc null. */
+  function ofcSeatNear(L, x, y, r){
+    var all = (L._seats || []).concat(L._cseats || []), best = null, bd = r;
+    all.forEach(function(s){ var dd = Math.hypot(s[0] - x, s[1] - y); if (dd <= bd){ bd = dd; best = s; } });
+    return best;
+  }
+  /** Ghế trống gần nhất cho mình (không ai đang ngồi / đang đi tới). */
+  function ofcFreeSeat(sc, me){
+    var L = sc.L, all = (L._seats || []).concat(L._cseats || []);
+    var busy = Object.keys(sc.ents).filter(function(id){ return sc.ents[id] !== me; }).map(function(id){ var e = sc.ents[id]; return e.goal || [e.x, e.y]; });
+    var ok = all.filter(function(s){ return !busy.some(function(b){ return Math.hypot(b[0] - s[0], b[1] - s[1]) < 30; }); });
+    ok.sort(function(a, b){ return Math.hypot(a[0] - me.x, a[1] - me.y) - Math.hypot(b[0] - me.x, b[1] - me.y); });
+    return ok[0] || null;
+  }
   function ofcDoAct(a){
     var sc = OFC.sc, d = OFC.d, me = sc && d && sc.ents[d.me]; if (!me) return;
     var t = (performance.now() - sc.t0) / 1000;
+    // v57: "ngồi" → tự đi tới ghế trống gần nhất rồi mới ngồi (trước đây ngồi bệt giữa sàn)
+    if (a === "sit" && me.act !== "sit" && !ofcSeatNear(sc.L, me.x, me.y, 15)){
+      var st = ofcFreeSeat(sc, me);
+      if (st){
+        var q = sc.nav.nearest(st[0], st[1]);
+        ofcSetAct(me, "", t); me.free = true; me.goal = [st[0], st[1]]; me.path = sc.nav.path(me.x, me.y, q[0], q[1]); me.mode = "walk"; me.pendAct = "sit"; me.actEnd = 0;
+        document.querySelectorAll("[data-ofcact]").forEach(function(b){ b.classList.toggle("is-on", b.getAttribute("data-ofcact") === "sit"); });
+        OFC_LV.last = ""; ofcLiveTick(); return;
+      }
+    }
     if (me.act === a){ ofcSetAct(me, "", t); }
     else {
       if (me.mode === "walk"){ me.pendAct = a; }

@@ -5,12 +5,14 @@ LẦN ĐẦU — bấm đúp "Cai-bot-WingArc.command" (chuột phải → Mở 
   2. Gõ User ID + Password WingArc → lưu vào Keychain của máy Mac (không ghi ra file).
   3. Dán KHOÁ BOT: trong app (quản lý) → tab Tháng › 📊 Báo cáo cho chủ quán › 🤖 Bot WingArc › Tạo khoá → Chép khoá.
      Khoá chỉ dùng để GỬI doanh thu / số bán vào app — không đọc được dữ liệu nào.
-  4. (Tuỳ chọn) hẹn bot tự chạy 7:30 mỗi sáng.
+  4. (Tuỳ chọn) hẹn bot tự chạy 22:00 mỗi tối (FOR đóng 21:00 + 1 tiếng). Đổi/hẹn lại: bấm đúp Hen-gio-bot.command.
   5. Chrome mở ra → đăng nhập WingArc → mở và TẢI từng báo cáo CSV như mọi khi:
        • doanh thu + khách theo ngày   • doanh thu theo giờ   • số bán từng món (商品別)   • (tuỳ) イートイン/テイクアウト/デリバリー
      Chọn kỳ "当月 / tháng này" nếu có. Xong thì ĐÓNG cửa sổ Chrome — bot đã học đường bấm và gửi luôn các file vừa tải.
 
-HẰNG NGÀY — bấm đúp "WingArc-Bot.command" (hoặc để bot tự chạy mỗi sáng).
+HẰNG NGÀY — bot tự chạy 22:00: báo cáo NGÀY (file 1–3). Ngày đầu tháng thêm báo cáo THÁNG TRƯỚC (時間帯別…, file 4–5).
+  Chạy tay: bấm đúp "WingArc-Bot.command". Ép lấy lại tháng trước: chạy trong Terminal  ./WingArc-Bot.command thang
+  Ảnh + thông tin trang báo cáo mỗi lần chạy: thư mục "tham-do" (để Claude kiểm tra bot chọn đúng kỳ).
 TỰ TẢI TAY — thả file CSV vào thư mục "tha-csv" rồi bấm đúp WingArc-Bot.command (bot gửi rồi cất vào "da-gui").
 WINGARC ĐỔI GIAO DIỆN — bấm đúp "Hoc-lai-duong-bam.command".
 Kết quả mỗi lần chạy: nhat-ky.txt.   Xoá tài khoản đã lưu: app "Keychain Access" → tìm "subway-wingarc" / "subway-wabot" → xoá.
