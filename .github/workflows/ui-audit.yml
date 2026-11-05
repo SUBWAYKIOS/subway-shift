@@ -1,26 +1,27 @@
 # Kiểm tỉ lệ giao diện — tự chạy mỗi lần src/Index.html đổi (không chặn việc đưa app lên).
 # Kết quả: tab Actions → "Kiểm tỉ lệ giao diện" → tóm tắt + file "bao-cao-ti-le" (report.html, ảnh khoanh đỏ).
+# Ghi chú: ghim ubuntu-24.04 — từ 19/10/2026 "ubuntu-latest" chuyển sang Ubuntu 26, Playwright 1.56 chưa hỗ trợ → bước cài trình duyệt lỗi.
 name: Kiểm tỉ lệ giao diện
 on:
   push:
     branches: [main]
-    paths: ["src/Index.html", "test/ui-audit.js"]
+    paths: ["src/Index.html", "test/ui-audit.js", ".github/workflows/ui-audit.yml"]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   audit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Cài trình duyệt kiểm thử
         run: |
-          npm i --no-save playwright@1.56.1 >/dev/null
-          npx playwright install --with-deps chromium >/dev/null
+          npm i --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
       - name: Chạy bộ kiểm tỉ lệ
         id: run
         continue-on-error: true
@@ -30,7 +31,7 @@ jobs:
         run: |
           echo "## Kiểm tỉ lệ giao diện" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          tail -40 audit.txt >> "$GITHUB_STEP_SUMMARY" || true
+          tail -40 audit.txt >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "(không có kết quả — xem log bước trên)" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -38,6 +39,7 @@ jobs:
           name: bao-cao-ti-le
           path: test/ui-audit/
           retention-days: 14
+          if-no-files-found: ignore
       - name: Báo lỗi nếu có
         if: steps.run.outcome == 'failure'
         run: echo "::error::Bộ kiểm tỉ lệ phát hiện lỗi giao diện — mở file bao-cao-ti-le để xem chỗ khoanh đỏ." && exit 1
