@@ -4,39 +4,44 @@ name: Kiểm tỉ lệ giao diện
 on:
   push:
     branches: [main]
-    paths: ["src/Index.html", "test/ui-audit.js"]
+    paths: ["src/Index.html", "test/ui-audit.js", ".github/workflows/ui-audit.yml"]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   audit:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - name: Cài trình duyệt kiểm thử
+          node-version: 22
+      - name: Cài Playwright
         run: |
-          npm i --no-save playwright@1.56.1 >/dev/null
-          npx playwright install --with-deps chromium >/dev/null
+          mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw"
+          npm init -y > /dev/null
+          npm i playwright@1.56.1
+          echo "NODE_PATH=$RUNNER_TEMP/pw/node_modules" >> "$GITHUB_ENV"
+      - name: Cài trình duyệt Chromium
+        run: npx --prefix "$RUNNER_TEMP/pw" playwright install --with-deps chromium
       - name: Chạy bộ kiểm tỉ lệ
         id: run
         continue-on-error: true
-        run: node test/ui-audit.js | tee audit.txt
+        run: node test/ui-audit.js 2>&1 | tee audit.txt; exit ${PIPESTATUS[0]}
       - name: Tóm tắt
         if: always()
         run: |
           echo "## Kiểm tỉ lệ giao diện" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          tail -40 audit.txt >> "$GITHUB_STEP_SUMMARY" || true
+          tail -40 audit.txt >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "(chưa chạy tới bước kiểm)" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: bao-cao-ti-le
           path: test/ui-audit/
+          if-no-files-found: ignore
           retention-days: 14
       - name: Báo lỗi nếu có
         if: steps.run.outcome == 'failure'

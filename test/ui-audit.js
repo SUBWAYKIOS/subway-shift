@@ -140,11 +140,11 @@ function measure(opt){
 
 (async () => {
   await new Promise(r => server.listen(PORT, r));
-  const exe = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', browser = await pw.chromium.launch(fs.existsSync(exe) ? { executablePath: exe } : {});
+  const exe = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', GLA = ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'], browser = await pw.chromium.launch(fs.existsSync(exe) ? { executablePath: exe, args: GLA } : { args: GLA });
   const SKINS = ['modern', 'glass', 'blue', 'mono'];
   const VIEWS = [{ k: 'phone', w: 402, h: 874 }, { k: 'pc', w: 1280, h: 900 }].concat(FULL ? [{ k: 'se', w: 375, h: 667 }] : []);
   const THEMES = FULL ? ['light', 'dark'] : ['light'];
-  const SCREENS = ['login', 'day', 'month', 'settings', 'staff'];
+  const SCREENS = ['login', 'day', 'month', 'office', 'settings', 'staff'];
   const results = [];
   for (const sk of SKINS) for (const th of THEMES) for (const v of VIEWS){
     const ctx = await browser.newContext({ viewport: { width: v.w, height: v.h }, deviceScaleFactor: 1, isMobile: v.w < 700, hasTouch: v.w < 700, timezoneId: 'Asia/Tokyo', locale: 'ja-JP' });
@@ -174,6 +174,7 @@ function measure(opt){
     await p.waitForFunction(() => !!document.querySelector('[data-mtab]'), null, { timeout: 20000 }); await p.waitForTimeout(1000);
     await shot('day');
     await p.evaluate(() => document.querySelector('[data-mtab="month"]').click()); await p.waitForTimeout(1200); await shot('month');
+    if (await p.locator('[data-mtab="office"]').count()){ await p.evaluate(() => document.querySelector('[data-mtab="office"]').click()); await p.waitForTimeout(2600); await shot('office'); }   // v55
     await p.evaluate(() => { const b = document.getElementById('goSettingsBtn'); if (b) b.click(); }); await p.waitForTimeout(900); await shot('settings');
     await ctx.close();
     // nhân viên (máy đã ghi nhớ)
