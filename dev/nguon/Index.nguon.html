@@ -5456,6 +5456,25 @@
   .wx-fxb{border:0;background:none;color:var(--muted);font:inherit;font-size:11px;padding:6px 0 6px 8px;min-height:32px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
   .wx-svg{display:block;flex:none;}
   @media (max-width:420px){ .wx-top{flex-direction:column;align-items:stretch;gap:8px;} .wx-hrs{-webkit-mask-image:none;mask-image:none;justify-content:space-between;} .wx-h{min-width:38px;} }
+  /* v58.1: ô thời tiết nhỏ — góc phải thẻ ca (nhân viên) / hàng chip của ngày (quản lý); bấm mở chi tiết */
+  .wx-strip.in-dlg{border:0;box-shadow:none;padding:2px 0 0;margin:0;background:none;}
+  .wx-strip.in-dlg .wx-hrs{overflow:visible;-webkit-mask-image:none;mask-image:none;gap:0;}
+  .wx-strip.in-dlg .wx-h{flex:1 1 0;min-width:0;}
+  .st-card .st-top-r{align-self:center;}
+  .wx-mini{display:inline-flex;align-items:center;gap:6px;border:0;margin:0;font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;line-height:1.05;position:relative;flex:none;
+    background:rgba(127,127,127,.12);background:color-mix(in srgb,currentColor 9%,transparent);transition:background .15s;}
+  .wx-mini:active{background:color-mix(in srgb,currentColor 16%,transparent);}
+  .wx-mini .wm-t{display:flex;flex-direction:column;align-items:flex-start;gap:1px;}
+  .wx-mini b{font-size:17px;font-weight:800;letter-spacing:-.3px;}
+  .wx-mini small{font-size:11px;font-weight:600;opacity:.78;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .wx-mini em{font-style:normal;color:#3B78C4;margin-left:4px;}
+  .wx-mini.has-ad::after{content:"";position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:#F5B82E;}
+  .wx-mini.is-card{min-height:40px;padding:4px 11px 4px 7px;border-radius:12px;}
+  .st-card.is-today .wx-mini em,.st-card:not(.is-none) .wx-mini em{color:#CFE4FF;}
+  .wx-mini.is-pill{min-height:30px;padding:2px 10px 2px 5px;border-radius:10px;margin-left:auto;color:var(--ink);background:var(--card);border:1px solid var(--line);}
+  .wx-mini.is-pill .wx-svg{width:20px;height:20px;}
+  .wx-mini.is-pill .wm-t{flex-direction:row;align-items:baseline;gap:5px;}
+  .wx-mini.is-pill b{font-size:14px;}
   /* lớp nền: nằm SAU nội dung (z-index âm), không bắt chạm, rất nhẹ */
   .wx-fx{position:fixed;left:0;right:0;top:0;height:260px;pointer-events:none;z-index:-1;overflow:hidden;}
   .wx-fx i{position:absolute;display:block;}
@@ -9921,10 +9940,10 @@
   // PHIÊN BẢN — Code.gs và Index.html phải cùng một bản. Dán thiếu một file hay
   // quên "New version" khi Deploy thì hiện băng cảnh báo ngay đầu app.
   // =========================================================================
-  var APP_VERSION = "2026.11.06.2";
+  var APP_VERSION = "2026.11.06.3";
   // v45: giao diện (GitHub) cập nhật thường xuyên hơn máy chủ → chỉ cảnh báo khi Code.gs CŨ HƠN bản tối thiểu
   // mà giao diện này cần (SRV_NEED), không bắt hai bên phải cùng số. Sửa máy chủ thì nâng SRV_NEED.
-  var SRV_NEED = "2026.11.06.2";
+  var SRV_NEED = "2026.11.06.3";
   function verCmp(a, b){
     var x = String(a || "").split("."), y = String(b || "").split(".");
     for (var i = 0; i < Math.max(x.length, y.length); i++){ var p = Number(x[i]) || 0, q = Number(y[i]) || 0; if (p !== q) return p < q ? -1 : 1; }
@@ -31097,11 +31116,11 @@
   // lớp nắng / mây / mưa rất nhẹ sau nội dung, bầu trời + mưa ở tab Quán, biểu tượng trên lịch. 出典：気象庁ホームページ
   // =========================================================================
   var WX_TX = {
-    vi: { now: "Bây giờ", next: "Theo giờ", week: "7 ngày", rain: "Mưa", src: "Nguồn: 気象庁", fxOn: "Hiệu ứng: bật", fxOff: "Hiệu ứng: tắt", hum: "Ẩm",
+    vi: { close: "Đóng", title: "Thời tiết", more: "Xem thời tiết", k_sN: "Trời quang", now: "Bây giờ", next: "Theo giờ", week: "7 ngày", rain: "Mưa", src: "Nguồn: 気象庁", fxOn: "Hiệu ứng: bật", fxOff: "Hiệu ứng: tắt", hum: "Ẩm",
       k_s: "Nắng", k_c: "Nhiều mây", k_r: "Mưa", k_n: "Tuyết", adRain: "Có mưa {h} — khách ghé quán có thể ít hơn, đơn giao hàng / mang về thường tăng.", adRainT: "Ngày mai có mưa {h} — nên chuẩn bị thêm cho giao hàng / mang về.", adHot: "Nóng {t}°C — chuẩn bị thêm đá và đồ uống lạnh.", adCold: "Lạnh {t}°C — súp / đồ nóng thường bán chạy.", adStorm: "Mưa to ({p} mm/giờ) — lưu ý sàn trơn ở cửa ra vào.", st: "trạm {n}" },
-    ja: { now: "現在", next: "3時間ごと", week: "週間", rain: "降水", src: "出典：気象庁", fxOn: "演出：オン", fxOff: "演出：オフ", hum: "湿度",
+    ja: { close: "閉じる", title: "天気", more: "天気の詳細", k_sN: "晴れ", now: "現在", next: "3時間ごと", week: "週間", rain: "降水", src: "出典：気象庁", fxOn: "演出：オン", fxOff: "演出：オフ", hum: "湿度",
       k_s: "晴れ", k_c: "くもり", k_r: "雨", k_n: "雪", adRain: "{h}に雨の予報 — 来店が減り、デリバリー・テイクアウトが増えやすい時間です。", adRainT: "明日{h}に雨の予報 — デリバリー・テイクアウトの準備を。", adHot: "最高{t}°C — 氷・冷たいドリンクの準備を。", adCold: "最高{t}°C — スープなど温かい商品が売れやすい日です。", adStorm: "強い雨（{p}mm/h）— 入口の床の滑りに注意。", st: "{n}観測所" },
-    en: { now: "Now", next: "Hourly", week: "7 days", rain: "Rain", src: "Source: JMA", fxOn: "Effects: on", fxOff: "Effects: off", hum: "Hum.",
+    en: { close: "Close", title: "Weather", more: "Weather details", k_sN: "Clear", now: "Now", next: "Hourly", week: "7 days", rain: "Rain", src: "Source: JMA", fxOn: "Effects: on", fxOff: "Effects: off", hum: "Hum.",
       k_s: "Sunny", k_c: "Cloudy", k_r: "Rain", k_n: "Snow", adRain: "Rain {h} — fewer walk-ins, more delivery / take-out.", adRainT: "Rain tomorrow {h} — prepare for more delivery / take-out.", adHot: "Hot {t}°C — prepare extra ice and cold drinks.", adCold: "Cold {t}°C — soups and hot items sell better.", adStorm: "Heavy rain ({p} mm/h) — watch for slippery floor at the entrance.", st: "{n} station" }
   };
   function wt(k, v){ var D = WX_TX[state.lang] || WX_TX.vi, s = D[k] != null ? D[k] : (WX_TX.vi[k] || k); if (v) s = String(s).replace(/\{(\w+)\}/g, function(m, x){ return v[x] != null ? v[x] : m; }); return s; }
@@ -31126,7 +31145,50 @@
     (d.h3 || []).forEach(function(x){ if (new Date(x.t + ":00+09:00") <= now) cur = x; });
     return (cur || (d.h3 || [])[0] || d.today || { k: "c" }).k;
   }
-  function wxStripHTML(){ return '<section class="wx-strip no-ei" id="wxStrip" aria-label="' + escapeHTML(wt("now")) + '">' + (WX.d ? wxInnerHTML() : '<div class="wx-skel"></div>') + '</section>'; }
+  // v58.1: không còn thẻ to trên trang — chỉ một ô nhỏ ở góc thẻ ca (nhân viên) / hàng chip của ngày (quản lý); bấm → bảng chi tiết.
+  function wxStripHTML(){ return ''; }
+  function wxKL(k, night){ return wt(k === "s" && night ? "k_sN" : "k_" + k); }
+  /** Thời tiết của một ngày (YYYY-MM-DD): hôm nay = trời lúc này; 6 ngày tới = dự báo; ngoài khoảng → null. */
+  function wxDayInfo(ymd){
+    var d = WX.d; if (!d) return null;
+    var f = (d.days || []).filter(function(x){ return x.d === ymd; })[0];
+    if (ymd === todayStrClient()){
+      var o = d.obs || {}, temp = o.temp != null ? o.temp : ((d.h3 || [])[0] || {}).c;
+      var pop = (d.pop6 || []).filter(function(x){ return new Date(x.t + ":00+09:00") > new Date(Date.now() - 6 * 3600000); })[0];
+      return { k: wxNowKind(), night: wxNight(), t: temp != null ? Math.round(temp) : null, hi: f ? f.hi : null, lo: f ? f.lo : null, pop: pop && pop.p != null ? pop.p : (f ? f.pop : null), now: 1 };
+    }
+    return f ? { k: f.k, night: false, t: f.hi, hi: null, lo: f.lo, pop: f.pop } : null;
+  }
+  function wxMiniHTML(ymd, cls){
+    var x = wxDayInfo(ymd); if (!x || x.t == null) return '';
+    var sub = x.now ? [x.hi, x.lo].filter(function(v){ return v != null; }).map(function(v){ return v + '°'; }).join(' / ') : (x.lo != null ? x.lo + '°' : '');
+    var wet = x.pop != null && x.pop >= 30 ? '<em>' + x.pop + '%</em>' : '';
+    var ad = x.now && wxAdvice((WX.d.h3 || []), (WX.d.days || [])[0] || {}, WX.d.obs || {});
+    return '<button type="button" class="wx-mini ' + cls + (ad ? ' has-ad' : '') + '" data-wxmini="' + ymd + '" aria-label="' + escapeHTML(wt("more") + ': ' + wxKL(x.k, x.night) + ' ' + x.t + '°') + '" title="' + escapeHTML(wxKL(x.k, x.night) + (ad ? ' — ' + ad : '')) + '">' +
+      wxIcon(x.k, x.night, 26) + '<span class="wm-t"><b>' + x.t + '°</b>' + (sub || wet ? '<small>' + sub + wet + '</small>' : '') + '</span></button>';
+  }
+  /** Gắn ô nhỏ vào chỗ của nó sau mỗi lần vẽ (không thêm khối mới vào trang). */
+  function wxMount(){
+    document.querySelectorAll(".wx-mini").forEach(function(b){ b.remove(); });
+    if (!WX.d) return;
+    var top = document.querySelector(".st-card.next-shift .st-top-r");
+    if (top){ var dt = typeof stViewDate === "function" ? stViewDate() : new Date(); top.insertAdjacentHTML("beforeend", wxMiniHTML(stYmd(dt), "is-card")); }
+    var dh = state.role !== "emp" && state.mgrTab === "day" && document.querySelector(".day-head");
+    if (dh){
+      var row = dh.querySelector(".alerts-row"); if (!row){ row = document.createElement("div"); row.className = "alerts-row"; dh.appendChild(row); }
+      var ymd = state.year + "-" + pad(state.month) + "-" + pad(state.selectedDay || 1);
+      row.insertAdjacentHTML("beforeend", wxMiniHTML(ymd, "is-pill"));
+      if (!row.children.length) row.remove();
+    }
+  }
+  function wxDetailDialog(){
+    if (!WX.d) return;
+    uiDialog({ title: wt("title"), html: '<div class="wx-strip in-dlg">' + wxInnerHTML() + '</div>', hideCancel: true, okText: wt("close") });
+  }
+  document.addEventListener("click", function(ev){
+    var b = ev.target.closest && ev.target.closest("[data-wxmini]"); if (!b) return;
+    ev.preventDefault(); ev.stopPropagation(); wxDetailDialog();
+  }, true);
   function wxInnerHTML(){
     var d = WX.d, L = state.lang, night = wxNight(), k = wxNowKind(), o = d.obs || {}, t0 = (d.days || [])[0] || {};
     var temp = o.temp != null ? o.temp : ((d.h3 || [])[0] || {}).c;
@@ -31169,8 +31231,7 @@
     }
   }
   function wxPaint(){
-    var el = document.getElementById("wxStrip"); if (el && WX.d) el.innerHTML = wxInnerHTML();
-    wxFxApply(); wxCalIcons(); wxStage();
+    wxMount(); wxFxApply(); wxCalIcons(); wxStage();
   }
   // ---- lớp hiệu ứng nền (sau nội dung, không bắt chạm) ----
   function wxFxApply(){

@@ -1,3 +1,8 @@
+## v2026.11.06.3 — 🌤 thời tiết gọn: ô nhỏ ở góc thẻ ca thay cho thẻ to
+- Bỏ thẻ thời tiết to trên tab Hôm nay / tab Ngày. Thay bằng **ô nhỏ** ở góc phải thẻ ca (nhân viên) và trong hàng chip của ngày (quản lý): biểu tượng + nhiệt độ + cao/thấp + % mưa (khi ≥ 30%); chấm vàng = có lời nhắc.
+- Ô đi theo ngày đang xem (‹ › hoặc chọn ngày trên lịch): hôm nay = trời lúc này, 6 ngày tới = dự báo, ngoài khoảng thì ẩn.
+- Bấm ô → bảng chi tiết (bây giờ · 3 giờ/lần · 7 ngày · lời nhắc · bật/tắt hiệu ứng). Ban đêm trời quang ghi "Trời quang" thay vì "Nắng".
+
 ## v2026.11.06.2 — 🌤 thời tiết từng giờ + hiệu ứng nắng mưa · 💴 chi phí, lãi lỗ dự kiến, hòa vốn · 📈 báo cáo "từ lúc mở tiệm" · bot lấy lùi tháng cũ
 - **🌤 Thời tiết** (nguồn 気象庁 — ghi "出典：気象庁ホームページ"): dải thời tiết trên tab Hôm nay (nhân viên) và tab Ngày (quản lý): nhiệt độ thật ở trạm アメダス gần quán nhất, dự báo 3 giờ/lần, 7 ngày + khả năng mưa, lời nhắc (mưa trong giờ mở cửa → khách mang về/giao hàng tăng, chuẩn bị túi/khăn; mai mưa; nóng; lạnh; bão). Tự cập nhật 25 phút/lần, máy chủ nhớ tạm 30 phút.
 - **Hiệu ứng tinh tế** theo thời tiết + giờ: nắng nhẹ, mây trôi, mưa lất phất, tuyết, sao đêm — nằm sau nội dung, không bắt chạm; có nút bật/tắt (nhớ trên máy), tự đứng yên khi máy bật "giảm chuyển động", không chạy trên bản in/trang chủ quán.

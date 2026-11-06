@@ -48,6 +48,8 @@ A.wxHttp_ = urls => urls.map(u => { httpCalls++;
   for (let d = 1; d <= ND; d++) E.forEach((e, i) => { if ((d + i) % 3 === 0) return; A.saveShiftEntry(t, YM, d, e.id, { off: false, shifts: [{ start: 9 + (i % 3) * 2, end: 15 + (i % 3) * 3 }] }); });
   const k = A.waBotKey(t, true).key, mk = (ym, upto) => { const n = new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate(), d0 = {}; for (let d = 1; d <= Math.min(n, upto); d++){ const w = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1, d).getDay(); d0[d] = { rev: 150000 + (w === 0 || w === 6 ? 90000 : 0) + (d % 5) * 4000, cust: 110 + d, eat: 40000, take: 100000, deli: 12000, h: { 12: 40000, 13: 25000 } }; } return d0; };
   const M2 = A.ymShift_(YM, -2), M1 = A.ymShift_(YM, -1);
+  A.saveShiftEntry(t, YM, D, 'e1aaaa', { off: false, shifts: [{ start: 10, end: 18, breakStart: 13, breakEnd: 14 }] });   // thẻ ca xanh (có ca hôm nay)
+  const tomorrowYmd = new Date(Date.now() + 33 * 3600000).toISOString().slice(0, 10);
   A.waBotImport(k, JSON.stringify({ months: { [M2]: { d: mk(M2, 31) } } })); A.waBotImport(k, JSON.stringify({ months: { [M1]: { d: mk(M1, 31) } } }));
   A.waBotImport(k, JSON.stringify({ months: { [YM]: { d: mk(YM, Math.max(1, D - 1)) } } }));
   // nhật ký thời tiết vài ngày trước (để có bảng "thời tiết và doanh thu")
@@ -118,17 +120,29 @@ A.wxHttp_ = urls => urls.map(u => { httpCalls++;
     console.log('— Nhân viên ' + nm + ' —');
     const s = await open(vp, { staff: true, lang: 'vi' });
     await s.evaluate(() => { const b = document.querySelector('[data-stab="today"]'); if (b) b.click(); }); await W(s, 1800);
-    ok(nm + ': thanh thời tiết trên tab Hôm nay', await s.locator('#wxStrip .wx-now').count() === 1, await s.evaluate(() => (document.getElementById('wxStrip') || {}).outerHTML || 'không có'));
-    ok(nm + ': có 3 giờ + 7 ngày', await s.locator('#wxStrip .wx-h').count() >= 4 && await s.locator('#wxStrip .wx-d').count() === 7);
-    ok(nm + ': lời khuyên khi có mưa', RAIN === 's' || /mưa/i.test(await s.locator('#wxStrip .wx-ad').innerText().catch(() => '')));
-    ok(nm + ': thanh thời tiết không tràn', !(await noOverflow(s, '#wxStrip')), await noOverflow(s, '#wxStrip'));
-    ok(nm + ': lớp hiệu ứng nền (sau nội dung, không bắt chạm)', await s.evaluate(() => { const f = document.getElementById('wxFx'); if (!f) return false; const cs = getComputedStyle(f); return cs.pointerEvents === 'none' && Number(cs.zIndex) < 0; }));
-    await s.locator('#wxStrip').screenshot({ path: path.join(SHOT, nm + '-strip.png') });
+    ok(nm + ': không còn thẻ thời tiết to trên trang', await s.locator('.app .wx-strip, #wxStrip').count() === 0 && await s.locator('.wx-strip:not(.in-dlg)').count() === 0);
+    ok(nm + ': ô thời tiết nhỏ nằm trong thẻ ca', await s.locator('.st-card.next-shift .st-top-r .wx-mini').count() === 1, await s.evaluate(() => (document.querySelector('.st-card.next-shift') || {}).outerHTML?.slice(0, 300) || 'không có thẻ ca'));
+    const geo = await s.evaluate(() => { const c = document.querySelector('.st-card.next-shift'), w = c.querySelector('.wx-mini'), r = w.getBoundingClientRect(), cr = c.getBoundingClientRect();
+      const hit = [...c.querySelectorAll('.sdn-btn,.sdn-pick,.st-time,.ns-time,.st-sub')].filter(x => { const q = x.getBoundingClientRect(); return q.width && !(q.right <= r.left || q.left >= r.right || q.bottom <= r.top || q.top >= r.bottom); }).map(x => x.className);
+      return { inCard: r.right <= cr.right + 0.5 && r.left >= cr.left && r.top >= cr.top, hit, h: Math.round(r.height), w: Math.round(r.width) }; });
+    ok(nm + ': ô nhỏ gọn, nằm góc phải, không đè chữ / nút', geo.inCard && !geo.hit.length && geo.h <= 48 && geo.w <= 130, JSON.stringify(geo));
     await s.screenshot({ path: path.join(SHOT, nm + '-staff-today.png') });
-    // tắt hiệu ứng
-    await s.click('[data-wxfx]'); await W(s, 300);
+    await s.locator('.st-card.next-shift').screenshot({ path: path.join(SHOT, nm + '-card.png') });
+    ok(nm + ': lớp hiệu ứng nền (sau nội dung, không bắt chạm)', await s.evaluate(() => { const f = document.getElementById('wxFx'); if (!f) return false; const cs = getComputedStyle(f); return cs.pointerEvents === 'none' && Number(cs.zIndex) < 0; }));
+    // bấm ô nhỏ → bảng chi tiết
+    await s.click('.wx-mini'); await W(s, 600);
+    ok(nm + ': bấm ô → bảng chi tiết (bây giờ · 3 giờ · 7 ngày)', await s.locator('.modal-back .wx-now').count() === 1 && await s.locator('.modal-back .wx-h').count() >= 4 && await s.locator('.modal-back .wx-d').count() === 7);
+    ok(nm + ': lời khuyên khi có mưa (trong bảng chi tiết)', RAIN === 's' || /mưa/i.test(await s.locator('.modal-back .wx-ad').innerText().catch(() => '')));
+    ok(nm + ': bảng chi tiết không tràn', !(await noOverflow(s, '.modal-back .wx-strip')), await noOverflow(s, '.modal-back .wx-strip'));
+    await s.locator('.modal-back .modal-box').screenshot({ path: path.join(SHOT, nm + '-strip.png') });
+    await s.click('.modal-back [data-wxfx]'); await W(s, 300);
     ok(nm + ': tắt hiệu ứng được', !(await s.locator('#wxFx').count()));
-    await s.click('[data-wxfx]'); await W(s, 300);
+    await s.click('.modal-back [data-wxfx]'); await W(s, 300);
+    await s.click('#mOk'); await W(s, 500);
+    // ngày mai: ô nhỏ hiện dự báo của ngày đang xem
+    await s.click('.st-navtop [data-stoff="1"]'); await W(s, 900);
+    ok(nm + ': xem ngày mai → ô hiện dự báo ngày mai', await s.evaluate(() => { const b = document.querySelector('.st-card.next-shift .wx-mini'); return b ? b.getAttribute('data-wxmini') : null; }) === tomorrowYmd);
+    await s.click('.st-navtop [data-stoff="0"]').catch(() => {}); await W(s, 700);
     // lịch tháng của nhân viên: biểu tượng thời tiết
     await s.evaluate(() => { const b = document.querySelector('[data-stab="shift"], [data-stab="month"], [data-stab="wish"]'); if (b) b.click(); }); await W(s, 1500);
     ok(nm + ': biểu tượng thời tiết trên lịch', await s.locator('.sg-cell .wx-ci').count() >= 1, await s.evaluate(() => document.querySelectorAll('.sg-cell').length));
@@ -142,7 +156,10 @@ A.wxHttp_ = urls => urls.map(u => { httpCalls++;
     console.log('— Quản lý ' + nm + ' —');
     const m = await open(vp, { lang: 'vi' });
     await m.evaluate(() => { const b = document.querySelector('[data-mtab="day"]'); if (b) b.click(); }); await W(m, 1800);
-    ok(nm + ': thanh thời tiết trên tab Ngày (quản lý)', await m.locator('#wxStrip .wx-now').count() === 1);
+    ok(nm + ': ô thời tiết nhỏ ở hàng chip của ngày (quản lý)', await m.locator('.day-head .wx-mini.is-pill').count() === 1 && await m.locator('.wx-strip').count() === 0);
+    const mg = await m.evaluate(() => { const b = document.querySelector('.day-head .wx-mini').getBoundingClientRect(); const wide = [...document.querySelectorAll('body *')].filter(x => { const r = x.getBoundingClientRect(); return r.width && r.right > innerWidth + 1 && !x.closest('.alerts-row,.dstrip,.day-strip,[class*=strip]'); }).slice(0, 4).map(x => x.tagName + '.' + String(x.className).slice(0, 40));
+      return { inView: b.right <= innerWidth && b.left >= 0, h: Math.round(b.height), wide }; });
+    ok(nm + ': ô quản lý gọn, nằm trong màn hình', mg.inView && mg.h <= 36, JSON.stringify(mg));
     if (nm === 'pc') ok(nm + ': biểu tượng thời tiết trên lịch tháng (quản lý)', await m.locator('.dc-cell .wx-ci').count() >= 1);
     await m.screenshot({ path: path.join(SHOT, nm + '-mgr-day.png') });
     await m.evaluate(() => document.querySelector('[data-mtab="month"]').click()); await W(m, 1200);

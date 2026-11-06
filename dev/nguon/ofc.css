@@ -363,6 +363,25 @@
   .wx-fxb{border:0;background:none;color:var(--muted);font:inherit;font-size:11px;padding:6px 0 6px 8px;min-height:32px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
   .wx-svg{display:block;flex:none;}
   @media (max-width:420px){ .wx-top{flex-direction:column;align-items:stretch;gap:8px;} .wx-hrs{-webkit-mask-image:none;mask-image:none;justify-content:space-between;} .wx-h{min-width:38px;} }
+  /* v58.1: ô thời tiết nhỏ — góc phải thẻ ca (nhân viên) / hàng chip của ngày (quản lý); bấm mở chi tiết */
+  .wx-strip.in-dlg{border:0;box-shadow:none;padding:2px 0 0;margin:0;background:none;}
+  .wx-strip.in-dlg .wx-hrs{overflow:visible;-webkit-mask-image:none;mask-image:none;gap:0;}
+  .wx-strip.in-dlg .wx-h{flex:1 1 0;min-width:0;}
+  .st-card .st-top-r{align-self:center;}
+  .wx-mini{display:inline-flex;align-items:center;gap:6px;border:0;margin:0;font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;line-height:1.05;position:relative;flex:none;
+    background:rgba(127,127,127,.12);background:color-mix(in srgb,currentColor 9%,transparent);transition:background .15s;}
+  .wx-mini:active{background:color-mix(in srgb,currentColor 16%,transparent);}
+  .wx-mini .wm-t{display:flex;flex-direction:column;align-items:flex-start;gap:1px;}
+  .wx-mini b{font-size:17px;font-weight:800;letter-spacing:-.3px;}
+  .wx-mini small{font-size:11px;font-weight:600;opacity:.78;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .wx-mini em{font-style:normal;color:#3B78C4;margin-left:4px;}
+  .wx-mini.has-ad::after{content:"";position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:#F5B82E;}
+  .wx-mini.is-card{min-height:40px;padding:4px 11px 4px 7px;border-radius:12px;}
+  .st-card.is-today .wx-mini em,.st-card:not(.is-none) .wx-mini em{color:#CFE4FF;}
+  .wx-mini.is-pill{min-height:30px;padding:2px 10px 2px 5px;border-radius:10px;margin-left:auto;color:var(--ink);background:var(--card);border:1px solid var(--line);}
+  .wx-mini.is-pill .wx-svg{width:20px;height:20px;}
+  .wx-mini.is-pill .wm-t{flex-direction:row;align-items:baseline;gap:5px;}
+  .wx-mini.is-pill b{font-size:14px;}
   /* lớp nền: nằm SAU nội dung (z-index âm), không bắt chạm, rất nhẹ */
   .wx-fx{position:fixed;left:0;right:0;top:0;height:260px;pointer-events:none;z-index:-1;overflow:hidden;}
   .wx-fx i{position:absolute;display:block;}

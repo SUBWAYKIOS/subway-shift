@@ -82,7 +82,7 @@ once('    officeAfterRender(tab === "office");\n', '    officeAfterRender(tab ==
 once('    officeAfterRender(state.mgrTab === "office");\n', '    officeAfterRender(state.mgrTab === "office");\n    wxAfterRender();\n', 'wxAfterMgr')
 
 # 5) phiên bản
-h = re.sub(r'var APP_VERSION = "[0-9.]+";', 'var APP_VERSION = "2026.11.06.2";', h, count=1)
-h = re.sub(r'var SRV_NEED = "[0-9.]+";', 'var SRV_NEED = "2026.11.06.2";', h, count=1)
+h = re.sub(r'var APP_VERSION = "[0-9.]+";', 'var APP_VERSION = "2026.11.06.3";', h, count=1)
+h = re.sub(r'var SRV_NEED = "[0-9.]+";', 'var SRV_NEED = "2026.11.06.3";', h, count=1)
 open(src, 'w', encoding='utf8').write(h)
 print('ok', len(js), 'js chars,', len(css), 'css chars')
