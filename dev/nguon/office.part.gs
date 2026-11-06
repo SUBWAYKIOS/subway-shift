@@ -282,7 +282,7 @@ function officeConfig(token, json) {
 var OFC_ACTS_ = ['', 'wipe', 'mop', 'vac', 'bake', 'sit', 'dance', 'dance2', 'wave', 'cheer', 'clap', 'heart', 'sleep', 'phone', 'eat', 'coffee', 'stretch', 'thumb', 'bow', 'think', 'guitar'];
 var OFC_KUDOS_ = { guest: 30, bake: 20, clean: 20, fast: 15, team: 20, smile: 15, help: 20, star: 50 };
 var OFC_GAMES_ = { bake: 900, 'catch': 3000, memo: 1000 };
-var TENCHOU_DENY_ = /^(forgetMgrDevice|mgrDevices|mgrDevicesClear|changeManagerPassword|resetManagerPasswordToDefault|payPwStatus|setPayPw|resetPayPw|listHistory|restoreHistory|tidyBackupsNow|runDailyBackup|backupNow|setDailyBackup|getBackupStatus|authorizeBackup|authorizeLine|saveLineToken|unlinkLineGroup|purgeEmployee|saveEmployees|saveSettings|exportHours|hr[A-Z]\w*|docTpl\w*|apl(List|Get|Update|Delete|Add|Hire|CfgSave|CfgGet)|ye(Get|Save)|bizLoad|posImport|posClear|salesSave|rcpSave|invItemsSave|invSave|bizApplyHc|posMonths|posRange|attKiosk\w*|attCard(Reg|Del|List)|attResetKey|attArchive\w*|attLogGet|attClose|attReopen|attConfig|hubJoin|hubAllow|storeCodeSave|setFrontUrl|cleanUpLegacyData|importSpreadsheetFile|officeConfig|owner\w*|wa[A-Z]\w*|attEdit|hl(Month|Config)|survey\w*|selfCheck|pushTest|mgrMailTest|setPin|resetPin|issueClaimCode|revokeDevices|empQuickLink|tenchouSession)$/;
+var TENCHOU_DENY_ = /^(forgetMgrDevice|mgrDevices|mgrDevicesClear|changeManagerPassword|resetManagerPasswordToDefault|payPwStatus|setPayPw|resetPayPw|listHistory|restoreHistory|tidyBackupsNow|runDailyBackup|backupNow|setDailyBackup|getBackupStatus|authorizeBackup|authorizeLine|saveLineToken|unlinkLineGroup|purgeEmployee|saveEmployees|saveSettings|exportHours|hr[A-Z]\w*|docTpl\w*|apl(List|Get|Update|Delete|Add|Hire|CfgSave|CfgGet)|ye(Get|Save)|bizLoad|posImport|posClear|salesSave|rcpSave|invItemsSave|invSave|bizApplyHc|posMonths|posRange|attKiosk\w*|attCard(Reg|Del|List)|attResetKey|attArchive\w*|attLogGet|attClose|attReopen|attConfig|hubJoin|hubAllow|storeCodeSave|setFrontUrl|cleanUpLegacyData|importSpreadsheetFile|officeConfig|owner\w*|wa[A-Z]\w*|cost[A-Z]\w*|attEdit|hl(Month|Config)|survey\w*|selfCheck|pushTest|mgrMailTest|setPin|resetPin|issueClaimCode|revokeDevices|empQuickLink|tenchouSession)$/;
 
 /** Ai có quyền Tenchou: chức vụ cao nhất (Cửa hàng trưởng / 店長) + những người quản lý tự chọn. */
 function ofcTenchou_() {
@@ -452,6 +452,7 @@ function waMerge_(ym, inp, src) {
     Object.keys(revOut).forEach(function (d) { s.d[d] = revOut[d]; });
     kvSet_('sales:' + ym, JSON.stringify(s), 'WingArc', true);
   }
+  try { CacheService.getScriptCache().remove('ohist'); } catch (e) {}   // trang "Từ lúc mở tiệm" thấy ngay tháng vừa nhập
   return { days: days };
 }
 function waImport(token, ym, json) {
@@ -532,7 +533,8 @@ function ownerReport_(ym) {
   var st = readSettings_();
   return { ym: ym, store: storeLabel_(), wage: st.wage || 0, emps: emps.map(function (e) { return { id: e.id, name: e.name, rk: Math.round(Number(e.rank)) || 0 }; }),
            sched: sh, att: ah, schedDay: sd, attDay: ad, attOn: !!attCfg_().on, guests: guests, guestDay: gDay, supOut: so,
-           wa: readJsonKey_('wa:' + ym), waPrev: readJsonKey_('wa:' + pym), salesPrev: readJsonKey_('sales:' + pym), bot: { on: !!props_().getProperty('WA_BOT'), last: (readJsonKey_('wabotlog').at || 0) } };
+           wa: readJsonKey_('wa:' + ym), waPrev: readJsonKey_('wa:' + pym), salesPrev: readJsonKey_('sales:' + pym), bot: { on: !!props_().getProperty('WA_BOT'), last: (readJsonKey_('wabotlog').at || 0) },
+           wx: (readJsonKey_('wx:' + ym).d) || {}, costs: costRead_(), today: todayStr_() };
 }
 
 // ===========================================================================
@@ -572,5 +574,188 @@ function ownerView(key, ym) {
   var months = [];
   for (var i = 0; i < 13; i++) { var m = ymShift_(cur, -i); if (i < 2 || has_(m)) months.push(m); }
   var st = readSettings_();
-  return { ok: true, ym: ym, months: months, r: ownerReport_(ym), d: bizLoad_(ym), lang: st.ownerLang || '' };
+  var hist = []; try { hist = ownerHistory_(); } catch (eH) {}
+  return { ok: true, ym: ym, months: months, r: ownerReport_(ym), d: bizLoad_(ym), hist: hist, lang: st.ownerLang || '' };
 }
+
+// ===========================================================================
+// 🌤 v58: THỜI TIẾT (dữ liệu 気象庁 — 出典：気象庁ホームページ) + 💴 CHI PHÍ / LỢI NHUẬN + 📈 TỪ LÚC MỞ TIỆM
+// ===========================================================================
+var WX_TTL_ = 1800;                                        // nhớ tạm 30 phút
+var WX_STORES_ = [                                         // toạ độ mặc định theo tên quán (Cài đặt có thể ghi đè lat/lon)
+  { re: /セントレア|centrair|中部国際/i, lat: 34.8584, lon: 136.8054 },
+  { re: /太田川|東海|forest|フォレスト/i, lat: 35.0207, lon: 136.8967 },
+  { re: /常滑|tokoname/i, lat: 34.8865, lon: 136.8323 }
+];
+function wxLoc_() {
+  var st = readSettings_(), lat = Number(st.wxLat), lon = Number(st.wxLon);
+  if (isFinite(lat) && isFinite(lon) && lat && lon) return { lat: lat, lon: lon };
+  var n = storeLabel_();
+  for (var i = 0; i < WX_STORES_.length; i++) if (WX_STORES_[i].re.test(n)) return { lat: WX_STORES_[i].lat, lon: WX_STORES_[i].lon };
+  return { lat: 35.1667, lon: 136.9667 };                  // 名古屋
+}
+/** Tải nhiều địa chỉ JSON cùng lúc; lỗi → null (tách riêng để kiểm thử thay được). */
+function wxHttp_(urls) {
+  try {
+    return UrlFetchApp.fetchAll(urls.map(function (u) { return { url: u, muteHttpExceptions: true }; })).map(function (r) {
+      try { return r.getResponseCode() === 200 ? r.getContentText() : null; } catch (e) { return null; }
+    });
+  } catch (e) { return urls.map(function () { return null; }); }
+}
+function wxJ_(t) { try { return t ? JSON.parse(t) : null; } catch (e) { return null; } }
+/** Mã thời tiết 気象庁 (100 晴れ / 200 くもり / 300 雨 / 400 雪) hoặc chữ → nhóm s|c|r|n. */
+function wxKind_(x) {
+  var s = String(x == null ? '' : x);
+  if (/^\d{3}$/.test(s)) { var c = s.charAt(0); return c === '1' ? 's' : c === '2' ? 'c' : c === '3' ? 'r' : c === '4' ? 'n' : 'c'; }
+  return /雪/.test(s) ? 'n' : /雨/.test(s) ? 'r' : /くもり|曇/.test(s) ? 'c' : /晴/.test(s) ? 's' : 'c';
+}
+/** Trạm アメダス gần quán nhất (bảng trạm nhớ tạm 1 ngày, mã trạm nhớ trong Properties). */
+function wxStation_(loc, tableText) {
+  var P = props_(), key = 'WX_ST', saved = P.getProperty(key), tag = loc.lat.toFixed(3) + ',' + loc.lon.toFixed(3);
+  if (saved && saved.indexOf(tag + '|') === 0) { var q = saved.split('|'); return { id: q[1], name: q[2] || '' }; }
+  var tb = wxJ_(tableText); if (!tb) return null;
+  var best = null, bd = 1e9;
+  Object.keys(tb).forEach(function (id) {
+    var r = tb[id]; if (!r || !r.lat || !r.lon || !r.elems || String(r.elems).charAt(0) !== '1') return;     // phải đo nhiệt độ
+    var la = r.lat[0] + r.lat[1] / 60, lo = r.lon[0] + r.lon[1] / 60, d = Math.pow(la - loc.lat, 2) + Math.pow((lo - loc.lon) * 0.82, 2);
+    if (d < bd) { bd = d; best = { id: id, name: r.kjName || '' }; }
+  });
+  if (best) try { P.setProperty(key, tag + '|' + best.id + '|' + best.name); } catch (e) {}
+  return best;
+}
+/** Gom dữ liệu thời tiết hiện tại + 3 giờ + 7 ngày. */
+function wxFetch_() {
+  var C = CacheService.getScriptCache(), hit = C.get('wx:v58');
+  if (hit) { try { return JSON.parse(hit); } catch (e) {} }
+  var B = 'https://www.jma.go.jp/bosai/', loc = wxLoc_(), stSaved = props_().getProperty('WX_ST');
+  var needTb = !(stSaved && stSaved.indexOf(loc.lat.toFixed(3) + ',' + loc.lon.toFixed(3) + '|') === 0);
+  var urls = [B + 'jmatile/data/wdist/VPFD/230010.json', B + 'forecast/data/forecast/230000.json', B + 'amedas/data/latest_time.txt'];
+  if (needTb) urls.push(B + 'amedas/const/amedastable.json');
+  var T = wxHttp_(urls), vp = wxJ_(T[0]), fc = wxJ_(T[1]), out = { at: Date.now(), src: '気象庁', h3: [], days: [], pop6: [], obs: null };
+  // 3 giờ: thời tiết khu Tây (西部) + nhiệt độ điểm 名古屋
+  try {
+    var aT = vp.areaTimeSeries, pT = vp.pointTimeSeries, temps = {};
+    (pT.timeDefines || []).forEach(function (t, i) { var k = String(t.dateTime || t).slice(0, 16); temps[k] = pT.temperature ? pT.temperature[i] : null; });
+    (aT.timeDefines || []).forEach(function (t, i) {
+      var k = String(t.dateTime || t).slice(0, 16), w = (aT.weather || [])[i];
+      out.h3.push({ t: k, k: wxKind_(w), w: String(w || '').slice(0, 12), c: temps[k] != null && temps[k] !== '' ? Number(temps[k]) : null });
+    });
+  } catch (e0) {}
+  // 6 giờ: khả năng mưa (西部); 7 ngày: 愛知県 + 名古屋
+  try {
+    var s0 = fc[0].timeSeries, pops = s0[1], ar = pops.areas.filter(function (a) { return a.area && a.area.code === '230010'; })[0] || pops.areas[0];
+    pops.timeDefines.forEach(function (t, i) { out.pop6.push({ t: String(t).slice(0, 16), p: ar.pops[i] === '' ? null : Number(ar.pops[i]) }); });
+    var w0 = s0[0], a0 = w0.areas.filter(function (a) { return a.area && a.area.code === '230010'; })[0] || w0.areas[0];
+    out.today = { code: a0.weatherCodes[0], k: wxKind_(a0.weatherCodes[0]), w: String(a0.weathers ? a0.weathers[0] : '').replace(/\s+/g, ' ').slice(0, 40) };
+  } catch (e1) {}
+  try {
+    var wk = fc[1].timeSeries, wa = wk[0].areas[0], wt = (wk[1].areas || [])[0] || {};
+    wk[0].timeDefines.forEach(function (t, i) {
+      out.days.push({ d: String(t).slice(0, 10), code: wa.weatherCodes[i], k: wxKind_(wa.weatherCodes[i]), pop: wa.pops && wa.pops[i] !== '' ? Number(wa.pops[i]) : null,
+        lo: wt.tempsMin && wt.tempsMin[i] !== '' ? Number(wt.tempsMin[i]) : null, hi: wt.tempsMax && wt.tempsMax[i] !== '' ? Number(wt.tempsMax[i]) : null });
+    });
+    // hôm nay / ngày mai: lấy cao–thấp từ bản ngắn hạn nếu bản tuần để trống
+    var s2 = fc[0].timeSeries[2], tm = (s2.areas || [])[0];
+    if (tm && out.days[0] && out.days[0].hi == null) { var hv = tm.temps.map(Number).filter(isFinite); if (hv.length) out.days[0].hi = Math.max.apply(null, hv.slice(0, 2)); }
+    if (out.today && out.days[0] && out.days[0].d === todayStr_()) { out.days[0].k = out.today.k; out.days[0].code = out.today.code; }
+  } catch (e2) {}
+  // Quan trắc thật: アメダス gần quán nhất
+  try {
+    var lt = String(T[2] || '').trim(), st = wxStation_(loc, needTb ? T[3] : null);
+    if (lt && st) {
+      var ts = lt.slice(0, 19).replace(/[-T:]/g, ''), mp = wxJ_(wxHttp_([B + 'amedas/data/map/' + ts + '.json'])[0]), o = mp && mp[st.id];
+      var v = function (k) { return o && o[k] && o[k][0] != null && o[k][1] === 0 ? Number(o[k][0]) : (o && o[k] && o[k][0] != null ? Number(o[k][0]) : null); };
+      if (o) out.obs = { at: lt.slice(0, 16), st: st.name, temp: v('temp'), rain1h: v('precipitation1h'), hum: v('humidity'), wind: v('wind') };
+    }
+  } catch (e3) {}
+  if (out.h3.length || out.days.length || out.obs) { try { C.put('wx:v58', JSON.stringify(out), WX_TTL_); } catch (e4) {} }
+  return out;
+}
+/** Ghi nhật ký thời tiết từng ngày (cao / thấp / mưa / loại) — dùng cho báo cáo + lịch. Mỗi 30 phút tối đa một lần. */
+function wxLog_(w) {
+  try {
+    var C = CacheService.getScriptCache(); if (C.get('wxlog')) return; C.put('wxlog', '1', WX_TTL_);
+    var today = todayStr_(), ym = today.slice(0, 7), d = String(Number(today.slice(8, 10))), cur = readJsonKey_('wx:' + ym);
+    if (!cur.d) cur = { d: {} };
+    var o = cur.d[d] || {}, ob = w.obs, hr = String(new Date(Date.now() + 9 * 3600000).getUTCHours());
+    if (ob && ob.temp != null) { o.hi = o.hi == null ? ob.temp : Math.max(o.hi, ob.temp); o.lo = o.lo == null ? ob.temp : Math.min(o.lo, ob.temp); }
+    if (ob && ob.rain1h != null) { o.rh = o.rh || {}; o.rh[hr] = ob.rain1h; o.rain = Math.round(Object.keys(o.rh).reduce(function (a, k) { return a + (Number(o.rh[k]) || 0); }, 0) * 10) / 10; }
+    if (w.today) o.k = o.rain >= 1 ? 'r' : w.today.k;
+    else if (o.rain >= 1) o.k = 'r';
+    cur.d[d] = o; kvSet_('wx:' + ym, JSON.stringify(cur), 'weather', true, true);
+  } catch (e) {}
+}
+/** Thời tiết cho app (mọi người đã đăng nhập). */
+function wxGet(token) {
+  auth_(token);
+  var w = wxFetch_(); wxLog_(w);
+  var ym = todayStr_().slice(0, 7);
+  w.log = (readJsonKey_('wx:' + ym).d) || {};
+  w.logPrev = (readJsonKey_('wx:' + ymShift_(ym, -1)).d) || {};
+  return w;
+}
+
+// ---- 💴 chi phí cố định / biến đổi (mỗi quán) ----
+var COST_KEYS_ = { rent: 'fix', common: 'fix', royalty: 'pct', adfund: 'pct', util: 'fix', net: 'fix', card: 'pct', deli: 'pctd', social: 'pctl', commute: 'fix', supplies: 'fix', repair: 'fix', insure: 'fix', deprec: 'fix', other: 'fix' };
+function costRead_() {
+  var c = readJsonKey_('costs'); c = c && typeof c === 'object' ? c : {};
+  return { open: /^\d{4}-\d{2}$/.test(c.open || '') ? c.open : '', items: c.items && typeof c.items === 'object' ? c.items : {}, extra: Array.isArray(c.extra) ? c.extra : [],
+           target: Number(c.target) || 0, at: c.at || 0 };
+}
+function costGet(token) { requireManager_(token); return costRead_(); }
+/** Lưu: { open:'YYYY-MM', items:{ rent: 300000, royalty: 8, … }, extra:[{n:'…', t:'fix'|'pct', v}], target: lợi nhuận mục tiêu/tháng }. */
+function costSave(token, json) {
+  requireManager_(token);
+  var o; try { o = typeof json === 'string' ? JSON.parse(json) : json; } catch (e) { throw new Error('Dữ liệu không hợp lệ.'); }
+  var num = function (v, max) { var n = Number(v); return isFinite(n) && n >= 0 && n <= max ? Math.round(n * 100) / 100 : null; };
+  var items = {};
+  Object.keys(COST_KEYS_).forEach(function (k) { var v = num((o.items || {})[k], COST_KEYS_[k] === 'fix' ? 99999999 : 100); if (v !== null && v > 0) items[k] = v; });
+  var extra = (Array.isArray(o.extra) ? o.extra : []).slice(0, 10).map(function (x) {
+    var t = x && x.t === 'pct' ? 'pct' : 'fix', v = num(x && x.v, t === 'fix' ? 99999999 : 100);
+    return { n: String((x && x.n) || '').replace(/[<>]/g, '').trim().slice(0, 24), t: t, v: v || 0 };
+  }).filter(function (x) { return x.n && x.v > 0; });
+  var open = /^\d{4}-\d{2}$/.test(String(o.open || '')) ? String(o.open) : '';
+  if (open && (open < '2000-01' || open > todayStr_().slice(0, 7))) throw new Error('Tháng mở tiệm không hợp lệ.');
+  var c = { open: open, items: items, extra: extra, target: num(o.target, 99999999) || 0, at: Date.now() };
+  kvSet_('costs', JSON.stringify(c), 'costs', true);
+  try { CacheService.getScriptCache().remove('ohist'); } catch (e) {}
+  return c;
+}
+
+// ---- 📈 tóm tắt từng tháng (từ tháng mở tiệm) ----
+/** Một tháng: doanh thu, khách, ngày có số liệu, giờ xếp ca (cả người chi viện), kênh bán. Tháng đã qua → nhớ lại để lần sau đọc nhanh. */
+function ownerSummary_(ym) {
+  var cur = todayStr_().slice(0, 7), done = ym < cur;
+  var sv = done ? readJsonKey_('osum:' + ym) : null; if (!(sv && sv.v === 3)) sv = null;   // chỉ cache GIỜ công (tốn) — doanh thu luôn đọc lại (bot có thể lấy lùi tháng cũ)
+  var wa = (readJsonKey_('wa:' + ym).d) || {}, sl = (readJsonKey_('sales:' + ym).d) || {}, n = new Date(Date.UTC(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)), 0)).getUTCDate();
+  var o = { v: 3, ym: ym, rev: 0, cust: 0, days: 0, eat: 0, take: 0, deli: 0, h: 0 };
+  for (var d = 1; d <= n; d++) {
+    var w = wa[d] || wa[String(d)] || {}, r = Number(w.rev) || Number(sl[d] || sl[String(d)]) || 0;
+    if (r) { o.rev += r; o.days++; }
+    o.cust += Number(w.cust) || 0; o.eat += Number(w.eat) || 0; o.take += Number(w.take) || 0; o.deli += Number(w.deli) || 0;
+  }
+  if (sv) { o.h = sv.h || 0; return o; }
+  try {
+    var R = ownerReport_(ym);
+    Object.keys(R.sched || {}).forEach(function (k) { o.h += R.sched[k]; });
+    (R.guests || []).forEach(function (g) { o.h += g.h || 0; });
+    o.h = Math.round(o.h * 10) / 10;
+  } catch (e) {}
+  if (done && o.h) { try { kvSet_('osum:' + ym, JSON.stringify({ v: 3, h: o.h }), 'osum', true, true); } catch (e2) {} }
+  return o;
+}
+/** Danh sách tháng từ tháng mở tiệm (hoặc tháng sớm nhất có số liệu, tối đa 60 tháng) tới tháng này. */
+function ownerHistory_() {
+  var C = CacheService.getScriptCache(), hit = C.get('ohist');
+  if (hit) { try { return JSON.parse(hit); } catch (e) {} }
+  var cur = todayStr_().slice(0, 7), cs = costRead_(), from = cs.open;
+  if (!from) {                                             // chưa nhập tháng mở tiệm → lùi tới tháng sớm nhất có doanh thu (tối đa 36 tháng)
+    from = cur;
+    for (var i = 1; i <= 36; i++) { var m = ymShift_(cur, -i), w = readJsonKey_('wa:' + m), s = readJsonKey_('sales:' + m); if ((w.d && Object.keys(w.d).length) || (s.d && Object.keys(s.d).length)) from = m; }
+  }
+  var out = [], m2 = from, guard = 0;
+  while (m2 <= cur && guard++ < 60) { out.push(ownerSummary_(m2)); m2 = ymShift_(m2, 1); }
+  try { C.put('ohist', JSON.stringify(out), 600); } catch (e) {}
+  return out;
+}
+function ownerHistory(token) { requireManager_(token); return { open: costRead_().open, months: ownerHistory_() }; }

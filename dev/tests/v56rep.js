@@ -76,7 +76,7 @@ const W = (p, ms) => p.waitForTimeout(ms);
   ok('nhập CSV theo giờ', wa.d['1'].h && wa.d['1'].h['12'] > 0, JSON.stringify(wa.d['1'].h));
   ok('nhập CSV số bán từng món (POS)', Object.keys(A.readJsonKey_('pos:2026-11').it || {}).length === 8);
   await m.click('[data-orep="open"]'); await W(m, 3500);
-  ok('mở bản báo cáo 3 trang A4', await m.locator('.doc-prev .or-a4').count() === 3);
+  ok('mở bản báo cáo ≥4 trang A4 (v58: + lãi lỗ dự kiến)', await m.locator('.doc-prev .or-a4').count() >= 4);
   const txt = await m.evaluate(() => document.querySelector('.doc-prev').innerText);
   ok('có doanh thu, khách, giờ cao điểm, món bán chạy', /¥/.test(txt) && /ローストチキン|BLT/.test(txt) && /\d+時台/.test(txt), txt.slice(0, 300));
   await m.screenshot({ path: path.join(SHOT, 'pc-report.png') });

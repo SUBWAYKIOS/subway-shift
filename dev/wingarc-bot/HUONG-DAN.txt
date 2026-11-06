@@ -13,6 +13,9 @@ LẦN ĐẦU — bấm đúp "Cai-bot-WingArc.command" (chuột phải → Mở 
 HẰNG NGÀY — bot tự chạy 22:00: báo cáo NGÀY (file 1–3). Ngày đầu tháng thêm báo cáo THÁNG TRƯỚC (時間帯別…, file 4–5).
   Chạy tay: bấm đúp "WingArc-Bot.command". Ép lấy lại tháng trước: chạy trong Terminal  ./WingArc-Bot.command thang
   Ảnh + thông tin trang báo cáo mỗi lần chạy: thư mục "tham-do" (để Claude kiểm tra bot chọn đúng kỳ).
+LẤY DỮ LIỆU CŨ (từ lúc mở tiệm) — bấm đúp "Lay-du-lieu-cu.command" → gõ tháng mở tiệm (vd 2023-04) → Enter.
+  Bot tải báo cáo THÁNG (file 4–5) cho từng tháng tới tháng trước và gửi từng tháng vào app (trang 5 "Từ lúc mở tiệm").
+  Mỗi tháng ~1–2 phút. Tháng đã lấy đủ tự bỏ qua → bị ngắt giữa chừng cứ chạy lại. Lấy lại tất cả: WA_REDO=1 ./Lay-du-lieu-cu.command
 TỰ TẢI TAY — thả file CSV vào thư mục "tha-csv" rồi bấm đúp WingArc-Bot.command (bot gửi rồi cất vào "da-gui").
 WINGARC ĐỔI GIAO DIỆN — bấm đúp "Hoc-lai-duong-bam.command".
 Kết quả mỗi lần chạy: nhat-ky.txt.   Xoá tài khoản đã lưu: app "Keychain Access" → tìm "subway-wingarc" / "subway-wabot" → xoá.

@@ -290,7 +290,7 @@
   html[data-theme="dark"] .ofc-tcbar,html[data-theme="dark"] .ofc-tool.is-tc{background:linear-gradient(135deg,#3A3220,#2C2618);color:#F3D98B;border-color:#6B5A2A;}
   /* báo cáo chủ quán */
   /* v57: ô báo cáo chủ quán — nút chính rộng, 3 nút phụ đều nhau, ngôn ngữ một hàng có nhãn */
-  .or-ticket .or-acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 10px;}
+  .or-ticket .or-acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0 10px;}
   .or-ticket .or-acts .btn{margin:0;min-width:0;width:100%;justify-content:center;white-space:normal;line-height:1.25;min-height:44px;padding:6px 8px;text-align:center;}
   .or-ticket .or-acts .or-main{grid-column:1 / -1;}
   .or-file{cursor:pointer;display:inline-flex;align-items:center;}
@@ -336,3 +336,78 @@
   .or-bot p{font-size:13.5px;line-height:1.55;margin:0 0 10px;}
   .or-bot .or-row{display:flex;gap:8px;flex-wrap:wrap;}
   .or-key{width:100%;height:40px;font:13px var(--mono);border:1px solid var(--line);border-radius:10px;padding:0 10px;margin:6px 0;background:var(--cream);color:var(--ink);}
+  /* =========================================================================
+     🌤 v58 THỜI TIẾT — thanh Hôm nay · lớp hiệu ứng nền · bầu trời tab Quán · biểu tượng lịch
+     ========================================================================= */
+  .wx-strip{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card,14px);padding:12px 14px 8px;margin:0 0 12px;box-shadow:var(--sh-card);}
+  .wx-skel{height:84px;border-radius:10px;background:linear-gradient(90deg,var(--line) 0%,var(--cream) 50%,var(--line) 100%);background-size:200% 100%;animation:wxSk 1.4s linear infinite;opacity:.5;}
+  @keyframes wxSk{to{background-position:-200% 0;}}
+  .wx-top{display:flex;align-items:center;gap:14px;}
+  .wx-now{display:flex;align-items:center;gap:10px;flex:none;}
+  .wx-nt b{display:block;font-size:30px;line-height:1;font-weight:800;color:var(--ink);letter-spacing:-.5px;}
+  .wx-nt span{display:block;font-size:13px;color:var(--ink);margin-top:3px;white-space:nowrap;}
+  .wx-nt small{display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;min-height:14px;}
+  .wx-hrs{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none;padding:2px 0;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);}
+  .wx-hrs::-webkit-scrollbar{display:none;}
+  .wx-h{flex:none;min-width:44px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;color:var(--muted);}
+  .wx-h b{font-size:13px;color:var(--ink);font-weight:700;}
+  .wx-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:10px;padding-top:8px;border-top:1px solid var(--line);}
+  .wx-d{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:11.5px;color:var(--muted);padding:3px 0;border-radius:8px;}
+  .wx-d.is-today{background:var(--cream);}
+  .wx-d.sun span{color:#D14B44;} .wx-d.sat span{color:#3B6FC4;}
+  .wx-d b{font-size:12.5px;color:var(--ink);font-weight:700;line-height:1.1;}
+  .wx-d small{font-size:11px;line-height:1.1;}
+  .wx-d em{font-style:normal;font-size:10.5px;color:#3B78C4;font-weight:700;min-height:13px;line-height:1.2;}
+  .wx-ad{margin-top:8px;font-size:12.5px;line-height:1.45;color:var(--ink);background:var(--cream);border-radius:9px;padding:7px 10px;}
+  .wx-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;font-size:11px;color:var(--muted);}
+  .wx-fxb{border:0;background:none;color:var(--muted);font:inherit;font-size:11px;padding:6px 0 6px 8px;min-height:32px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+  .wx-svg{display:block;flex:none;}
+  @media (max-width:420px){ .wx-top{flex-direction:column;align-items:stretch;gap:8px;} .wx-hrs{-webkit-mask-image:none;mask-image:none;justify-content:space-between;} .wx-h{min-width:38px;} }
+  /* lớp nền: nằm SAU nội dung (z-index âm), không bắt chạm, rất nhẹ */
+  .wx-fx{position:fixed;left:0;right:0;top:0;height:260px;pointer-events:none;z-index:-1;overflow:hidden;}
+  .wx-fx i{position:absolute;display:block;}
+  .wx-fx .wf-sky{inset:0;opacity:.55;background:linear-gradient(180deg,#FFF3D9 0%,rgba(255,243,217,0) 100%);}
+  .wx-fx.k-c .wf-sky,.wx-fx.k-n .wf-sky{background:linear-gradient(180deg,#EEF1F4 0%,rgba(238,241,244,0) 100%);}
+  .wx-fx.k-r .wf-sky{background:linear-gradient(180deg,#E3E9EF 0%,rgba(227,233,239,0) 100%);opacity:.7;}
+  .wx-fx.is-night .wf-sky{background:linear-gradient(180deg,#E4E6F1 0%,rgba(228,230,241,0) 100%);}
+  .wf-sun{right:-60px;top:-70px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(255,210,110,.55) 0%,rgba(255,210,110,.18) 40%,rgba(255,210,110,0) 70%);animation:wxGlow 9s ease-in-out infinite alternate;}
+  @keyframes wxGlow{from{transform:scale(1);opacity:.85;}to{transform:scale(1.08);opacity:1;}}
+  .wf-stars{inset:0;opacity:.35;background-image:radial-gradient(1.2px 1.2px at 12% 30%,#8C93B8 50%,transparent 51%),radial-gradient(1px 1px at 40% 18%,#8C93B8 50%,transparent 51%),radial-gradient(1.4px 1.4px at 72% 40%,#8C93B8 50%,transparent 51%),radial-gradient(1px 1px at 88% 14%,#8C93B8 50%,transparent 51%);}
+  .wf-cl{height:70px;border-radius:50px;background:rgba(200,207,215,.42);filter:blur(14px);animation:wxDrift 70s linear infinite;}
+  .wf-cl.c1{width:260px;top:10px;left:-280px;}
+  .wf-cl.c2{width:200px;top:60px;left:-220px;animation-duration:95s;animation-delay:-40s;opacity:.8;}
+  .wf-cl.c3{width:300px;top:120px;left:-320px;animation-duration:120s;animation-delay:-80s;opacity:.6;}
+  @keyframes wxDrift{to{transform:translateX(calc(100vw + 340px));}}
+  .wf-rain{inset:0;opacity:.22;background-image:repeating-linear-gradient(105deg,transparent 0 22px,rgba(90,120,160,.55) 22px 23px,transparent 23px 46px);background-size:46px 60px;animation:wxRain .55s linear infinite;-webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 100%);mask-image:linear-gradient(180deg,#000 0%,transparent 100%);}
+  @keyframes wxRain{to{background-position:-16px 60px;}}
+  .wf-snow{inset:0;opacity:.5;background-image:radial-gradient(2px 2px at 10% 20%,#fff 50%,transparent 51%),radial-gradient(2px 2px at 35% 60%,#fff 50%,transparent 51%),radial-gradient(1.6px 1.6px at 60% 30%,#fff 50%,transparent 51%),radial-gradient(2px 2px at 85% 70%,#fff 50%,transparent 51%);background-size:180px 180px;animation:wxSnow 9s linear infinite;}
+  @keyframes wxSnow{to{background-position:30px 180px;}}
+  html[data-theme="dark"] .wx-fx{opacity:.35;}
+  @media (prefers-reduced-motion:reduce){ .wx-fx i,.wx-skel,.ofc-wxr{animation:none !important;} }
+  /* biểu tượng lịch */
+  .dc-cell,.sg-cell{position:relative;}
+  .wx-ci{position:absolute;top:2px;right:2px;line-height:0;opacity:.9;pointer-events:none;}
+  .wx-ci:not(.is-f){opacity:.55;}
+  /* tab Quán: bầu trời theo thời tiết + giờ */
+  .ofc-stage.tod-day.wx-s{background:linear-gradient(180deg,#DCEBFA 0%,#F7F1E6 70%);}
+  .ofc-stage.tod-day.wx-c{background:linear-gradient(180deg,#E3E7EC 0%,#EFEAE1 70%);}
+  .ofc-stage.wx-r{background:linear-gradient(180deg,#C9D2DC 0%,#E6E3DD 70%);}
+  .ofc-stage.wx-n{background:linear-gradient(180deg,#DDE3EA 0%,#F2F2F0 70%);}
+  .ofc-stage.tod-dawn,.ofc-stage.tod-dusk{background:linear-gradient(180deg,#F6D7B8 0%,#F3E7D8 70%);}
+  .ofc-stage.tod-night{background:linear-gradient(180deg,#2D3550 0%,#4A4A5A 80%);}
+  .ofc-stage.wx-c .ofc-cv{filter:brightness(.97) saturate(.94);}
+  .ofc-stage.wx-r .ofc-cv{filter:brightness(.93) saturate(.88);}
+  .ofc-stage.tod-night .ofc-cv{filter:brightness(.86) saturate(.9);}
+  .ofc-wxr{position:absolute;inset:0;pointer-events:none;z-index:1;opacity:.28;background-image:repeating-linear-gradient(100deg,transparent 0 26px,rgba(120,150,190,.7) 26px 27px,transparent 27px 52px);background-size:52px 80px;animation:wxRain .5s linear infinite;-webkit-mask-image:linear-gradient(180deg,#000 0%,rgba(0,0,0,.25) 60%,transparent 100%);mask-image:linear-gradient(180deg,#000 0%,rgba(0,0,0,.25) 60%,transparent 100%);}
+  .ofc-wxr.is-snow{opacity:.6;background-image:radial-gradient(2px 2px at 20% 30%,#fff 50%,transparent 51%),radial-gradient(1.6px 1.6px at 70% 60%,#fff 50%,transparent 51%);background-size:120px 120px;animation:wxSnow 7s linear infinite;}
+  /* v58: hộp chi phí */
+  .cst h5{margin:14px 0 6px;font-size:13px;color:var(--muted);font-weight:700;}
+  .cst .cst-r{display:flex !important;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;margin:0;border-bottom:1px solid var(--line);}
+  .cst-r > span:first-child{min-width:0;} .cst-r b{display:block;font-size:14px;font-weight:600;color:var(--ink);} .cst-r small{display:block;font-size:11.5px;color:var(--muted);}
+  .cst-in{display:flex;align-items:center;gap:6px;flex:none;}
+  .cst .cst-in input{width:120px !important;min-width:0;margin:0;height:40px;border:1px solid var(--line);border-radius:9px;padding:0 9px;font:inherit;font-size:15px;text-align:right;background:var(--card);color:var(--ink);}
+  .cst .cst-in input[type=month]{width:172px !important;text-align:left;font-size:14px;}
+  .cst-in em{font-style:normal;font-size:11.5px;color:var(--muted);width:72px;line-height:1.2;}
+  .cst-x{display:grid;grid-template-columns:minmax(0,1fr) 110px 96px;gap:6px;margin-bottom:6px;}
+  .cst-x input,.cst-x select{height:40px;border:1px solid var(--line);border-radius:9px;padding:0 8px;font:inherit;font-size:14px;background:var(--card);color:var(--ink);min-width:0;}
+  @media (max-width:420px){ .cst .cst-in input{width:100px !important;} .cst-in em{width:60px;} .cst-x{grid-template-columns:minmax(0,1fr) 84px 84px;} }

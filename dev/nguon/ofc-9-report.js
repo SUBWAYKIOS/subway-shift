@@ -11,7 +11,7 @@
       cogsAct: "実原価", cogsTheo: "理論原価", notes: "所見", none: "データなし", src: "データ: WingArc（Dr.Sum）CSV・シフト・打刻・発注・棚卸",
       nUp: "売上は前月比 {p} 増加しました。", nDown: "売上は前月比 {p} 減少しました。", nBestDow: "最も売上が高い曜日は{d}曜日（平均 {y}）。", nPeak: "ピークは {h}時台（1日平均 {y}）。",
       nLabor: "人件費率は {p}（目標 {t}）です。", nLaborHi: "人件費率が目標 {t} を上回っています。シフトの見直しをおすすめします。", nMh: "人時売上は {y}/時間 です。",
-      nGap: "シフトと実績の差は {h} 時間です。", page: "{a} / {b}", guest: "応援", gHelp: "{s}より応援", supOut: "他店への応援 {h}時間（当店の人件費には含みません）", gNote: "応援スタッフはシフト時間で計上", more: "ほか{n}名", bad: "このリンクは無効になりました。お店の管理者に新しいリンクをお尋ねください。", month: "対象月", print: "印刷", pdf: "PDF保存", pdfDl: "PDFをダウンロード", loading: "読み込み中…", viewOnly: "閲覧専用" },
+      nGap: "シフトと実績の差は {h} 時間です。", page: "{a} / {b}", guest: "応援", gHelp: "{s}より応援", supOut: "他店への応援 {h}時間（当店の人件費には含みません）", gNote: "応援スタッフはシフト時間で計上", more: "ほか{n}名", bad: "このリンクは無効になりました。お店の管理者に新しいリンクをお尋ねください。", month: "対象月", print: "印刷", pdf: "PDF保存", pdfDl: "PDFをダウンロード", loading: "読み込み中…", viewOnly: "閲覧専用", pl: "損益（P&L）", plAct: "実績", plFc: "月末予測", plShare: "構成比", cRev: "売上", cCogs: "原価（食材）", cLabor: "人件費（給与・社保・交通費）", cRent: "家賃・共益費", cFee: "ロイヤリティ・広告分担金", cUtil: "水道光熱費・通信費", cPay: "決済・デリバリー手数料", cOther: "その他経費", cProfit: "営業利益", cMargin: "利益率", be: "損益分岐点売上", beDay: "1日あたり", tgtP: "目標利益", tgtGap: "目標との差", fl: "FL比率", flr: "FLR比率", miss: "未入力の経費: {x}（設定すると精度が上がります）", noCogs: "原価未確定 — 理論原価で計算", noCogs0: "* 原価（食材費）がまだ無いため、利益は原価を含まず大きめに出ています。「売上・原材料」でレシピ・棚卸・発注を入れると計算されます。", fcNote: "月末予測 = 今日までの実績 + 残り{n}日 × 曜日別平均{w}", fcWx: "（天気予報を反映）", hist: "開店からの推移", histSince: "{m}から", hMonth: "月", hRev: "売上", hDay: "日販", hCust: "客数", hMh: "人時売上", hProfit: "営業利益（概算）", hTotal: "累計", hNote: "営業利益（概算）は現在の経費設定と原価率で計算。今月は月末予測で、累計の利益には含めません。", wxT: "天気と売上", wxS: "晴れ", wxC: "くもり", wxR: "雨", wxDays: "日数", wxAvg: "平均売上", wxNo: "天気の記録はまだありません（アプリを開くと毎日記録されます）", prog: "売上の進み具合", progBe: "分岐点", progFc: "予測" },
     vi: { title: "Báo cáo tháng của quán", sub: "Gửi chủ quán", made: "Ngày lập", rev: "Doanh thu", cust: "Lượt khách", avg: "Chi tiêu / khách", labor: "Tỷ lệ nhân công", mh: "Doanh thu / giờ công", cogs: "Tỷ lệ giá vốn", fl: "Tỷ lệ FL",
       prev: "So tháng trước", days: "{n} ngày", dRev: "Doanh thu theo ngày", dRevPrev: "Tháng trước (cùng ngày)", dow: "Trung bình theo thứ", dowRev: "Doanh thu", dowCust: "Khách", hourly: "Doanh thu theo giờ (TB một ngày)",
       chan: "Cơ cấu (ăn tại quán / mang đi / giao hàng)", eat: "Ăn tại quán", take: "Mang đi", deli: "Giao hàng", top: "Món bán chạy (sandwich)", item: "Món", qty: "Số lượng", share: "Tỉ lệ",
@@ -20,7 +20,7 @@
       cogsAct: "Giá vốn thực", cogsTheo: "Giá vốn lý thuyết", notes: "Nhận xét", none: "Chưa có dữ liệu", src: "Nguồn: CSV WingArc (Dr.Sum), lịch ca, điểm danh, phiếu đặt hàng, kiểm kê",
       nUp: "Doanh thu tăng {p} so với tháng trước.", nDown: "Doanh thu giảm {p} so với tháng trước.", nBestDow: "Thứ bán tốt nhất: {d} (TB {y}).", nPeak: "Giờ cao điểm: {h} giờ (TB {y}/ngày).",
       nLabor: "Tỷ lệ nhân công {p} (mục tiêu {t}).", nLaborHi: "Tỷ lệ nhân công cao hơn mục tiêu {t} — nên xem lại lịch ca.", nMh: "Doanh thu / giờ công: {y}.",
-      nGap: "Chênh lệch giữa xếp ca và thực tế: {h} giờ.", page: "{a} / {b}", guest: "Chi viện", gHelp: "chi viện từ {s}", supOut: "Nhân viên quán đi chi viện quán khác {h} giờ (không tính vào chi phí quán này)", gNote: "Người chi viện tính theo giờ xếp ca", more: "và {n} người khác", bad: "Link này không còn hiệu lực. Hãy hỏi quản lý quán link mới.", month: "Tháng", print: "In", pdf: "Lưu PDF", pdfDl: "Tải PDF", loading: "Đang tải…", viewOnly: "Chỉ xem" },
+      nGap: "Chênh lệch giữa xếp ca và thực tế: {h} giờ.", page: "{a} / {b}", guest: "Chi viện", gHelp: "chi viện từ {s}", supOut: "Nhân viên quán đi chi viện quán khác {h} giờ (không tính vào chi phí quán này)", gNote: "Người chi viện tính theo giờ xếp ca", more: "và {n} người khác", bad: "Link này không còn hiệu lực. Hãy hỏi quản lý quán link mới.", month: "Tháng", print: "In", pdf: "Lưu PDF", pdfDl: "Tải PDF", loading: "Đang tải…", viewOnly: "Chỉ xem", pl: "Lãi lỗ (P&L)", plAct: "Thực tế", plFc: "Dự báo cuối tháng", plShare: "Tỉ lệ", cRev: "Doanh thu", cCogs: "Giá vốn (nguyên liệu)", cLabor: "Nhân công (lương · BHXH · đi lại)", cRent: "Tiền thuê · phí chung", cFee: "Phí nhượng quyền · quảng cáo", cUtil: "Điện nước gas · mạng", cPay: "Phí thẻ / QR · giao hàng", cOther: "Chi phí khác", cProfit: "Lợi nhuận kinh doanh", cMargin: "Tỉ suất lợi nhuận", be: "Doanh thu hòa vốn", beDay: "mỗi ngày", tgtP: "Lợi nhuận mục tiêu", tgtGap: "Chênh so với mục tiêu", fl: "Tỉ lệ FL", flr: "Tỉ lệ FLR", miss: "Chưa nhập chi phí: {x} (nhập vào để số chính xác hơn)", noCogs: "Chưa có giá vốn thực — tính theo giá vốn lý thuyết", noCogs0: "* Chưa có giá vốn (nguyên liệu) nên lợi nhuận đang chưa trừ giá vốn — cao hơn thực tế. Nhập công thức / kiểm kê / phiếu đặt ở \"Doanh thu & nguyên liệu\" để tính.", fcNote: "Dự báo cuối tháng = thực tế tới hôm nay + {n} ngày còn lại × trung bình theo thứ{w}", fcWx: " (có tính dự báo thời tiết)", hist: "Từ lúc mở tiệm tới nay", histSince: "từ {m}", hMonth: "Tháng", hRev: "Doanh thu", hDay: "TB/ngày", hCust: "Khách", hMh: "DT/giờ công", hProfit: "Lợi nhuận (ước)", hTotal: "Cộng dồn", hNote: "Lợi nhuận (ước) tính theo chi phí đang nhập và tỉ lệ giá vốn hiện tại. Tháng này là số dự báo cuối tháng, không cộng vào lợi nhuận cộng dồn.", wxT: "Thời tiết và doanh thu", wxS: "Nắng", wxC: "Mây", wxR: "Mưa", wxDays: "Số ngày", wxAvg: "DT trung bình", wxNo: "Chưa có nhật ký thời tiết (app tự ghi mỗi ngày khi có người mở)", prog: "Tiến độ doanh thu", progBe: "hòa vốn", progFc: "dự báo" },
     en: { title: "Monthly store report", sub: "For the owner", made: "Created", rev: "Sales", cust: "Guests", avg: "Avg. ticket", labor: "Labor ratio", mh: "Sales / labor hr", cogs: "Food cost", fl: "FL ratio",
       prev: "vs last month", days: "{n} days", dRev: "Daily sales", dRevPrev: "Last month (same day)", dow: "Average by weekday", dowRev: "Sales", dowCust: "Guests", hourly: "Sales by hour (daily avg.)",
       chan: "Channel mix (eat-in / take-out / delivery)", eat: "Eat-in", take: "Take-out", deli: "Delivery", top: "Best sellers (sandwiches)", item: "Item", qty: "Qty", share: "Share",
@@ -29,7 +29,7 @@
       cogsAct: "Actual food cost", cogsTheo: "Theoretical food cost", notes: "Highlights", none: "No data", src: "Sources: WingArc (Dr.Sum) CSV, schedule, time clock, orders, stock count",
       nUp: "Sales rose {p} vs last month.", nDown: "Sales fell {p} vs last month.", nBestDow: "Best weekday: {d} (avg {y}).", nPeak: "Peak hour: {h}:00 (avg {y}/day).",
       nLabor: "Labor ratio {p} (target {t}).", nLaborHi: "Labor ratio is above the {t} target — consider adjusting the schedule.", nMh: "Sales per labor hour: {y}.",
-      nGap: "Scheduled vs actual hours differ by {h} h.", page: "{a} / {b}", guest: "Support", gHelp: "support from {s}", supOut: "Our staff helped other stores {h} h (not counted here)", gNote: "Support staff counted by scheduled hours", more: "+{n} more", bad: "This link is no longer valid. Please ask the store manager for a new link.", month: "Month", print: "Print", pdf: "Save PDF", pdfDl: "Download PDF", loading: "Loading…", viewOnly: "View only" }
+      nGap: "Scheduled vs actual hours differ by {h} h.", page: "{a} / {b}", guest: "Support", gHelp: "support from {s}", supOut: "Our staff helped other stores {h} h (not counted here)", gNote: "Support staff counted by scheduled hours", more: "+{n} more", bad: "This link is no longer valid. Please ask the store manager for a new link.", month: "Month", print: "Print", pdf: "Save PDF", pdfDl: "Download PDF", loading: "Loading…", viewOnly: "View only", pl: "Profit & loss", plAct: "Actual", plFc: "Month-end forecast", plShare: "Share", cRev: "Sales", cCogs: "Food cost", cLabor: "Labor (wages · social ins. · commute)", cRent: "Rent · common fees", cFee: "Royalty · ad fund", cUtil: "Utilities · internet", cPay: "Card / QR · delivery fees", cOther: "Other expenses", cProfit: "Operating profit", cMargin: "Margin", be: "Break-even sales", beDay: "per day", tgtP: "Target profit", tgtGap: "Gap to target", fl: "FL ratio", flr: "FLR ratio", miss: "Costs not entered: {x} (enter them for accurate figures)", noCogs: "No actual food cost yet — theoretical cost used", noCogs0: "* No food cost yet, so profit excludes it and is overstated. Add recipes / stock counts / orders under Sales & ingredients.", fcNote: "Forecast = actual to date + {n} remaining days × weekday average{w}", fcWx: " (weather forecast applied)", hist: "Since opening", histSince: "since {m}", hMonth: "Month", hRev: "Sales", hDay: "Per day", hCust: "Guests", hMh: "Sales/labor hr", hProfit: "Op. profit (est.)", hTotal: "Total", hNote: "Estimated profit uses the current cost settings and food-cost rate. This month is the month-end forecast and is not added to the cumulative profit.", wxT: "Weather and sales", wxS: "Sunny", wxC: "Cloudy", wxR: "Rain", wxDays: "Days", wxAvg: "Avg sales", wxNo: "No weather log yet (the app records it daily while in use)", prog: "Sales progress", progBe: "break-even", progFc: "forecast" }
   };
   var OR_DOW = { ja: ["日", "月", "火", "水", "木", "金", "土"], vi: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"], en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] };
   function orLang(){ var l = lsGet("sbw.orlang"); return OR_TX[l] ? l : "ja"; }
@@ -112,6 +112,7 @@
     return '<div class="ticket or-ticket" id="orBox"><h3>📊 ' + escapeHTML(ot("orTitle")) + ' <span class="sub">' + escapeHTML(ot("orSub")) + '</span></h3>' +
       '<div class="or-acts"><button type="button" class="btn or-main" data-orep="open">📄 ' + escapeHTML(ot("orOpen", { m: state.month })) + '</button>' +
       '<button type="button" class="btn ghost" data-orep="link">🔗 ' + escapeHTML(ot("orLink")) + '</button>' +
+      '<button type="button" class="btn ghost" data-orep="cost">💴 ' + escapeHTML(ot("orCost")) + '</button>' +
       '<label class="btn ghost or-file">📥 ' + escapeHTML(ot("waImport")) + '<input type="file" accept=".csv,.txt,.tsv,.xlsx,.xls" multiple data-orep="file" hidden></label>' +
       '<button type="button" class="btn ghost" data-orep="bot">🤖 ' + escapeHTML(ot("waBot")) + '</button></div>' +
       '<div class="or-lang ofc-seg" role="group" aria-label="' + escapeHTML(ot("orLang")) + '"><span>' + escapeHTML(ot("orLang")) + '</span>' + [["ja", "日本語"], ["vi", "Tiếng Việt"], ["en", "English"]].map(function(x){ return '<button type="button" data-orlang="' + x[0] + '" class="' + (L === x[0] ? "is-on" : "") + '">' + x[1] + '</button>'; }).join("") + '</div>' +
@@ -128,6 +129,7 @@
     if (a === "open") ownerReportOpen(yearMonthStr(state.year, state.month));
     else if (a === "bot") waBotDialog();
     else if (a === "link") ownerLinkDialog();
+    else if (a === "cost") costDialog();
   });
   document.addEventListener("change", async function(ev){
     var i = ev.target; if (!i || i.getAttribute("data-orep") !== "file" || !i.files || !i.files.length) return;
@@ -169,6 +171,38 @@
         wire();
       } });
   }
+  // ---- v58: 💴 chi phí cố định / biến đổi + tháng mở tiệm + lợi nhuận mục tiêu ----
+  var COST_DEF = [
+    ["rent", "fix", "家賃"], ["common", "fix", "共益費・管理費"], ["royalty", "pct", "ロイヤリティ"], ["adfund", "pct", "広告分担金"],
+    ["util", "fix", "水道光熱費"], ["net", "fix", "通信費"], ["card", "pct", "決済手数料"], ["deli", "pctd", "デリバリー手数料"],
+    ["social", "pctl", "社会保険（会社負担）"], ["commute", "fix", "交通費"], ["supplies", "fix", "消耗品"], ["repair", "fix", "修繕費"],
+    ["insure", "fix", "保険料"], ["deprec", "fix", "減価償却費"], ["other", "fix", "その他"]
+  ];
+  async function costDialog(){
+    var c; try { c = await call("costGet"); } catch (e){ showToast((e && e.message) || t("saveErrorToast"), true); return; }
+    var unit = function(t0){ return t0 === "fix" ? ot("cuFix") : t0 === "pct" ? ot("cuPct") : t0 === "pctd" ? ot("cuPctD") : ot("cuPctL"); };
+    var row = function(k){ var v = (c.items || {})[k[0]]; return '<label class="cst-r"><span><b>' + escapeHTML(ot("ck_" + k[0])) + '</b><small>' + escapeHTML(k[2]) + '</small></span>' +
+      '<span class="cst-in"><input type="number" inputmode="decimal" min="0" step="' + (k[1] === "fix" ? "1000" : "0.1") + '" data-ck="' + k[0] + '" value="' + (v != null ? v : "") + '" placeholder="0"><em>' + escapeHTML(unit(k[1])) + '</em></span></label>'; };
+    var ex = (c.extra || []).concat([{ n: "", t: "fix", v: "" }, { n: "", t: "fix", v: "" }]).slice(0, 10);
+    var html = '<div class="cst"><p class="hint">' + escapeHTML(ot("cstHow")) + '</p>' +
+      '<label class="cst-r cst-open"><span><b>' + escapeHTML(ot("cstOpen")) + '</b><small>開店月</small></span><span class="cst-in"><input type="month" id="cstOpen" value="' + escapeHTML(c.open || "") + '" max="' + todayStrClient().slice(0, 7) + '"></span></label>' +
+      '<h5>' + escapeHTML(ot("cstFix")) + '</h5>' + COST_DEF.filter(function(k){ return k[1] === "fix"; }).map(row).join("") +
+      '<h5>' + escapeHTML(ot("cstVar")) + '</h5>' + COST_DEF.filter(function(k){ return k[1] !== "fix"; }).map(row).join("") +
+      '<h5>' + escapeHTML(ot("cstExtra")) + '</h5>' + ex.map(function(e, i){ return '<div class="cst-x"><input type="text" maxlength="24" data-exn="' + i + '" value="' + escapeHTML(e.n || "") + '" placeholder="' + escapeHTML(ot("cstExName")) + '">' +
+        '<input type="number" inputmode="decimal" min="0" data-exv="' + i + '" value="' + (e.v || "") + '" placeholder="0"><select data-ext="' + i + '"><option value="fix"' + (e.t !== "pct" ? " selected" : "") + '>' + escapeHTML(ot("cuFix")) + '</option><option value="pct"' + (e.t === "pct" ? " selected" : "") + '>' + escapeHTML(ot("cuPct")) + '</option></select></div>'; }).join("") +
+      '<h5>' + escapeHTML(ot("cstTarget")) + '</h5><label class="cst-r"><span><b>' + escapeHTML(ot("cstTargetL")) + '</b><small>目標利益</small></span><span class="cst-in"><input type="number" inputmode="numeric" min="0" step="10000" id="cstTarget" value="' + (c.target || "") + '" placeholder="0"><em>' + escapeHTML(ot("cuFix")) + '</em></span></label>' +
+      '<p class="hint">' + escapeHTML(ot("cstWage")) + '</p></div>';
+    var ok = await uiDialog({ title: "💴 " + ot("orCost"), html: html, okText: ot("save"), wide: true,
+      collect: function(back){
+        var o = { open: (back.querySelector("#cstOpen") || {}).value || "", items: {}, extra: [], target: Number((back.querySelector("#cstTarget") || {}).value) || 0 };
+        back.querySelectorAll("[data-ck]").forEach(function(i){ var v = Number(i.value); if (i.value !== "" && isFinite(v) && v > 0) o.items[i.getAttribute("data-ck")] = v; });
+        back.querySelectorAll("[data-exn]").forEach(function(i){ var k = i.getAttribute("data-exn"), v = Number((back.querySelector('[data-exv="' + k + '"]') || {}).value), t0 = (back.querySelector('[data-ext="' + k + '"]') || {}).value;
+          if (i.value.trim() && v > 0) o.extra.push({ n: i.value.trim(), t: t0 === "pct" ? "pct" : "fix", v: v }); });
+        return o;
+      } });
+    if (!ok) return;
+    try { await call("costSave", JSON.stringify(ok)); showToast(ot("cstSaved")); } catch (e){ showToast((e && e.message) || t("saveErrorToast"), true); }
+  }
   function uiConfirmLite(msg){ return uiDialog({ title: msg, message: "", okText: "OK", cancelText: t("cancelBtn") }); }
 
   async function waBotDialog(){
@@ -192,7 +226,7 @@
   }
 
   // ---- dựng bản báo cáo A4 ----
-  function orYen(n){ return "¥" + Math.round(n || 0).toLocaleString("ja-JP"); }
+  function orYen(n){ n = Math.round(n || 0); return (n < 0 ? "−¥" : "¥") + Math.abs(n).toLocaleString("ja-JP"); }
   function orPct(a, b){ return b ? (Math.round(a / b * 1000) / 10).toFixed(1) + "%" : "—"; }
   function orDelta(a, b){ if (!b || !a) return ""; var p = (a - b) / b * 100; return '<em class="' + (p >= 0 ? "up" : "dn") + '">' + (p >= 0 ? "▲ " : "▼ ") + Math.abs(Math.round(p * 10) / 10).toFixed(1) + "%</em>"; }
   function orBars(vals, opt){
@@ -201,9 +235,10 @@
     var bw = W / n, out = '<svg class="or-svg" viewBox="0 0 ' + W + ' ' + (H + 18) + '" xmlns="http://www.w3.org/2000/svg">';
     [0.25, 0.5, 0.75, 1].forEach(function(f){ out += '<line x1="0" x2="' + W + '" y1="' + (H - H * f) + '" y2="' + (H - H * f) + '" stroke="#E5E7EB" stroke-width="1"/>'; });
     vals.forEach(function(v, i){
-      var h = (v.v || 0) / mx * (H - 6), x0 = i * bw + bw * 0.16;
-      out += '<rect x="' + x0.toFixed(1) + '" y="' + (H - h).toFixed(1) + '" width="' + (bw * 0.68).toFixed(1) + '" height="' + h.toFixed(1) + '" rx="2" fill="' + (v.c || "#16884D") + '"/>';
-      if (v.v2){ var h2 = v.v2 / mx * (H - 6); out += '<rect x="' + x0.toFixed(1) + '" y="' + (H - h - h2).toFixed(1) + '" width="' + (bw * 0.68).toFixed(1) + '" height="' + h2.toFixed(1) + '" rx="2" fill="' + (v.c2 || "#F2A541") + '"/>'; }
+      var bwr = Math.min(bw * 0.68, opt.maxW || 1e9), h = (v.v || 0) / mx * (H - 6), x0 = i * bw + (bw - bwr) / 2;
+      out += '<rect x="' + x0.toFixed(1) + '" y="' + (H - h).toFixed(1) + '" width="' + bwr.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="2" fill="' + (v.c || "#16884D") + '"/>';
+      if (v.v2){ var h2 = v.v2 / mx * (H - 6); out += '<rect x="' + x0.toFixed(1) + '" y="' + (H - h - h2).toFixed(1) + '" width="' + bwr.toFixed(1) + '" height="' + h2.toFixed(1) + '" rx="2" fill="' + (v.c2 || "#F2A541") + '"/>'; }
+      if (v.rain) out += '<circle cx="' + (i * bw + bw / 2).toFixed(1) + '" cy="' + (H - 3).toFixed(1) + '" r="2.2" fill="#4D7FD6" stroke="#fff" stroke-width=".8"/>';
       if (v.p){ var ph = v.p / mx * (H - 6); out += '<circle cx="' + (i * bw + bw / 2).toFixed(1) + '" cy="' + (H - ph).toFixed(1) + '" r="2.4" fill="#F2A541"/>'; }
       if (n <= 16 || i % 2 === 0 || i === n - 1) out += '<text x="' + (i * bw + bw / 2).toFixed(1) + '" y="' + (H + 13) + '" font-size="9" text-anchor="middle" fill="' + (v.tc || "#6B7280") + '">' + escapeHTML(String(v.x)) + '</text>';
     });
@@ -211,7 +246,7 @@
   }
   async function ownerReportOpen(ym){
     var R, D;
-    try { R = await call("ownerReport", ym); D = BIZ.data[ym] || await call("bizLoad", ym); BIZ.data[ym] = D; }
+    try { R = await call("ownerReport", ym); D = BIZ.data[ym] || await call("bizLoad", ym); BIZ.data[ym] = D; try { R.hist = (await call("ownerHistory")).months; } catch (eH){ R.hist = []; } }
     catch (e){ showToast((e && e.message) || t("saveErrorToast"), true); return; }
     var y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7));
     await docPreview("📊 " + orT("title") + " " + y + "/" + pad(m), ownerReportHTML(R, D, ym), false);
@@ -232,7 +267,8 @@
     var guests = R.guests || [], gH = guests.reduce(function(a, g){ return a + (g.h || 0); }, 0), gDay = R.guestDay || {};
     var supOutH = 0; Object.keys(R.supOut || {}).forEach(function(k){ supOutH += R.supOut[k]; });
     schH += gH; if (actH) actH += gH;
-    var useH = actH || schH, wage = R.wage || 0, labor = wage * useH;
+    var CS = R.costs || { items: {}, extra: [] }, CI = CS.items || {};
+    var useH = actH || schH, wage = R.wage || 0, labor = wage * useH * (1 + (CI.social || 0) / 100);
     var C = null; try { C = bizCalc(D); } catch (e){}
     var buy = 0; try { buy = bizBuysYen(D); } catch (e){}
     var eI = D.inv && D.inv.c ? bizInvTotals(D, D.inv.c) : null, bI = D.invPrev && D.invPrev.c ? bizInvTotals(D, D.invPrev.c) : null;
@@ -263,6 +299,8 @@
       '.or-n{margin:0;padding-left:16px;}.or-n li{margin:2px 0;}.or-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}.or-src{position:absolute;left:17mm;bottom:7mm;font-size:7pt;color:#9CA3AF;}' +
       '.or-pno{position:absolute;right:17mm;bottom:7mm;font-size:8pt;color:#6B7280;}.or-leg{font-size:7.5pt;color:#6B7280;}.or-leg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin:0 3px 0 8px;vertical-align:0;}' +
       '.or-bar{height:9px;border-radius:3px;background:#16884D;display:inline-block;vertical-align:-1px;}.or-none{color:#9CA3AF;font-size:8.5pt;}' +
+      '.or-fc td{color:#4B5563;font-style:italic;}.or-fc small{font-style:normal;color:#6B7280;}.or-pl td,.or-pl th{padding:3.5px 5px;}.or-t td.or-na{color:#9CA3AF;}.or-pl .or-plrev td{font-weight:700;}.or-t td.neg{color:#B91C1C;}.or-pl small{font-weight:400;color:#6B7280;}.or-sub{font-weight:400;font-size:8pt;color:#6B7280;margin-left:6px;}' +
+      '.or-prog .or-pt{position:relative;height:16px;background:#F3F4F6;border-radius:4px;overflow:visible;margin:4px 0 4px;}.or-prog .or-pt i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;}.or-prog .pf{background:#A7D7B8;}.or-prog .pa{background:#16884D;z-index:1;}.or-prog .or-pt b{position:absolute;top:-4px;bottom:-4px;width:2px;background:#B91C1C;z-index:2;}' +
       '.or-staff td small{display:block;font-size:7pt;color:#9CA3AF;line-height:1.2;}.or-tag{display:inline-block;font-size:6.5pt;font-weight:700;color:#8A5A00;background:#FDF0D5;border-radius:3px;padding:0 3px;margin-right:4px;vertical-align:1px;}' +
       '</style>';
     var head = '<div class="or-hd"><div><h1>' + escapeHTML(orT("title")) + '</h1><small>' + escapeHTML(R.store) + ' · ' + escapeHTML(orT("sub")) + '</small></div><div class="or-m">' + y + '/' + pad(m) +
@@ -277,7 +315,8 @@
       tile(orT("labor"), rev && labor ? orPct(labor, rev) : "—", labor ? orT("laborCost") + " " + orYen(labor) : "") +
       tile(orT("mh"), rev && useH ? orYen(rev / useH) : "—", useH ? (Math.round(useH * 10) / 10) + "h" : "") +
       tile(cogsAct !== null ? orT("cogsAct") : orT("cogs"), rev && cogs ? orPct(cogs, rev) : "—", rev && cogs && labor ? orT("fl") + " " + orPct(cogs + labor, rev) : "") + '</div>';
-    p1 += '<div class="or-s"><h2>' + escapeHTML(orT("dRev")) + '</h2>' + (rev ? orBars(rows.map(function(x){ return { x: x.d, v: x.rev, p: x.revP, c: x.w === 0 ? "#E35D5B" : (x.w === 6 ? "#4D7FD6" : "#16884D"), tc: x.w === 0 ? "#E35D5B" : (x.w === 6 ? "#4D7FD6" : "#6B7280") }; }), { h: 150 }) +
+    var WXD0 = R.wx || {};
+    p1 += '<div class="or-s"><h2>' + escapeHTML(orT("dRev")) + '</h2>' + (rev ? orBars(rows.map(function(x){ var q = WXD0[x.d] || WXD0[String(x.d)]; return { rain: q && (q.k === "r" || q.k === "n"), x: x.d, v: x.rev, p: x.revP, c: x.w === 0 ? "#E35D5B" : (x.w === 6 ? "#4D7FD6" : "#16884D"), tc: x.w === 0 ? "#E35D5B" : (x.w === 6 ? "#4D7FD6" : "#6B7280") }; }), { h: 150 }) +
       '<div class="or-leg"><i style="background:#16884D"></i>' + escapeHTML(orT("rev")) + '<i style="background:#F2A541;border-radius:50%"></i>' + escapeHTML(orT("dRevPrev")) + '</div>' : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') + '</div>';
     p1 += '<div class="or-s"><h2>' + escapeHTML(orT("dow")) + '</h2><table class="or-t"><thead><tr><th></th>' + [1, 2, 3, 4, 5, 6, 0].map(function(w){ return '<th>' + DOW[w] + '</th>'; }).join("") + '</tr></thead><tbody>' +
       '<tr><td>' + escapeHTML(orT("dowRev")) + '</td>' + [1, 2, 3, 4, 5, 6, 0].map(function(w){ var b = byW[w]; return '<td>' + (b.n ? orYen(b.r / b.n) : "—") + '</td>'; }).join("") + '</tr>' +
@@ -316,7 +355,103 @@
     var sd = R.schedDay || {};
     p3 += '<div class="or-s"><h2>' + escapeHTML(orT("hrsDay")) + '</h2>' + (schH ? orBars(rows.map(function(x){ return { x: x.d, v: sd[x.d] || 0, v2: gDay[x.d] || 0, c: "#3FA7A3", c2: "#F2A541", tc: x.w === 0 ? "#E35D5B" : (x.w === 6 ? "#4D7FD6" : "#6B7280") }; }), { h: 90 }) +
       (gH ? '<div class="or-leg"><i style="background:#3FA7A3"></i>' + escapeHTML(orT("sch")) + '<i style="background:#F2A541"></i>' + escapeHTML(orT("guest")) + '</div>' : '') : '<div class="or-none">' + escapeHTML(orT("none")) + '</div>') + '</div>';
-    return page(1, 3, p1) + page(2, 3, p2) + page(3, 3, p3);
+    // ---- v58: thời tiết và doanh thu (trang 2) ----
+    var WXD = R.wx || {}, wxb = { s: [0, 0], c: [0, 0], r: [0, 0] };
+    rows.forEach(function(x){ var q = WXD[x.d] || WXD[String(x.d)]; if (q && q.k && x.rev){ var k = q.k === "n" ? "r" : q.k; if (wxb[k]){ wxb[k][0]++; wxb[k][1] += x.rev; } } });
+    var wxn = wxb.s[0] + wxb.c[0] + wxb.r[0];
+    p2 += '<div class="or-s"><h2>' + escapeHTML(orT("wxT")) + '</h2>' + (wxn ? '<table class="or-t"><thead><tr><th></th><th>' + escapeHTML(orT("wxDays")) + '</th><th>' + escapeHTML(orT("wxAvg")) + '</th><th style="width:40%"></th></tr></thead><tbody>' +
+      [["s", "wxS", "#F2B32E"], ["c", "wxC", "#9AA6B2"], ["r", "wxR", "#4D7FD6"]].map(function(q){ var b = wxb[q[0]], av = b[0] ? b[1] / b[0] : 0, mx = Math.max(1, wxb.s[0] ? wxb.s[1] / wxb.s[0] : 0, wxb.c[0] ? wxb.c[1] / wxb.c[0] : 0, wxb.r[0] ? wxb.r[1] / wxb.r[0] : 0);
+        return '<tr><td>' + escapeHTML(orT(q[1])) + '</td><td>' + b[0] + '</td><td>' + (b[0] ? orYen(av) : "—") + '</td><td>' + (b[0] ? '<span class="or-bar" style="width:' + Math.round(av / mx * 100) + '%;background:' + q[2] + '"></span>' : '') + '</td></tr>'; }).join("") +
+      '</tbody></table>' : '<div class="or-none">' + escapeHTML(orT("wxNo")) + '</div>') + '</div>';
+    // ---- v58: 損益 + dự báo cuối tháng + hòa vốn (trang 4) ----
+    var PL = orPL(R, D, ym, { rows: rows, rev: rev, nd: nd, labor: labor, wage: wage, schH: schH, cogs: cogs, cogsAct: cogsAct, cogsTheo: cogsTheo, ce: ce, ct: ct, cdl: cdl, DOW: DOW });
+    var p4 = PL.html;
+    // ---- v58: từ lúc mở tiệm (trang 5) ----
+    var p5 = orHistHTML(R.hist || [], R, PL);
+    var N = p5 ? 5 : 4;
+    return page(1, N, p1) + page(2, N, p2) + page(3, N, p3) + page(4, N, p4) + (p5 ? page(5, N, p5) : "");
+  }
+  /** Lãi lỗ tháng: thực tế tới hôm nay + dự báo cuối tháng (tháng đang chạy) + hòa vốn. */
+  function orPL(R, D, ym, X){
+    var CS = R.costs || { items: {}, extra: [] }, CI = CS.items || {}, L = orLang();
+    var cur = String(R.today || "").slice(0, 7) === ym, today = cur ? Number(String(R.today).slice(8, 10)) : X.nd;
+    // dự báo doanh thu: ngày đã có số + ngày còn lại theo trung bình từng thứ (tháng này + tháng trước), chỉnh theo thời tiết nếu có
+    var byW = {}, add = function(w, v){ (byW[w] = byW[w] || []).push(v); };
+    X.rows.forEach(function(x){ if (x.rev) add(x.w, x.rev); });
+    var waP = (R.waPrev && R.waPrev.d) || {}, py = Number(ym.slice(0, 4)), pm = Number(ym.slice(5, 7)) - 1; if (pm < 1){ pm = 12; py--; }
+    Object.keys(waP).forEach(function(k){ var v = waP[k] && waP[k].rev; if (v) add(new Date(py, pm - 1, Number(k)).getDay(), v); });
+    var all = [].concat.apply([], Object.keys(byW).map(function(k){ return byW[k]; })), avgAll = all.length ? all.reduce(function(a, b){ return a + b; }, 0) / all.length : 0;
+    var rainF = 0.92, WXD = R.wx || {}, rr = [], dr = [];
+    X.rows.forEach(function(x){ var q = WXD[x.d] || WXD[String(x.d)]; if (q && q.k && x.rev){ (q.k === "r" || q.k === "n" ? rr : dr).push(x.rev); } });
+    if (rr.length >= 2 && dr.length >= 4){ var a1 = rr.reduce(function(a, b){ return a + b; }, 0) / rr.length, a2 = dr.reduce(function(a, b){ return a + b; }, 0) / dr.length; rainF = Math.max(0.75, Math.min(1.05, a1 / a2)); }
+    var fcDays = [], wxUsed = false;
+    if (cur) for (var d = today; d <= X.nd; d++){
+      var row = X.rows[d - 1]; if (d === today && row.rev) continue;            // hôm nay đã có số (báo cáo 22:00) → không dự báo lại
+      if (d < today && row.rev) continue;
+      if (d < today) continue;                                                 // ngày đã qua không có số (nghỉ / thiếu) → bỏ
+      var wv = byW[row.w], est = wv && wv.length ? wv.reduce(function(a, b){ return a + b; }, 0) / wv.length : avgAll;
+      try { if (typeof WX !== "undefined" && WX.d && WX.d.days){ var key = ym + "-" + pad(d), f = WX.d.days.filter(function(z){ return z.d === key; })[0]; if (f && (f.k === "r" || f.k === "n") && (f.pop == null || f.pop >= 50)){ est *= rainF; wxUsed = true; } } } catch (e){}
+      fcDays.push(est);
+    }
+    var revF = X.rev + fcDays.reduce(function(a, b){ return a + b; }, 0);
+    var chTot = X.ce + X.ct + X.cdl, deliShare = chTot ? X.cdl / chTot : 0;
+    var cogsRate = X.cogs && X.rev ? X.cogs / X.rev : (X.cogsTheo && X.rev ? X.cogsTheo / X.rev : null);
+    var fix = (CI.rent || 0) + (CI.common || 0) + (CI.util || 0) + (CI.net || 0) + (CI.commute || 0) + (CI.supplies || 0) + (CI.repair || 0) + (CI.insure || 0) + (CI.deprec || 0) + (CI.other || 0);
+    var exFix = 0, exPct = 0; (CS.extra || []).forEach(function(e){ if (e.t === "pct") exPct += e.v || 0; else exFix += e.v || 0; });
+    var pctFee = ((CI.royalty || 0) + (CI.adfund || 0)) / 100, pctPay = (CI.card || 0) / 100, pctDeli = (CI.deli || 0) / 100 * deliShare, pctEx = exPct / 100;
+    // nhân công cả tháng = lịch đã xếp (đã gồm BHXH) — tháng đang chạy: dùng lịch, không dùng chấm công dở dang
+    var laborM = cur ? X.wage * X.schH * (1 + (CI.social || 0) / 100) : X.labor;
+    function calc(rv, labor){
+      var cg = cogsRate != null ? rv * cogsRate : 0, rent = (CI.rent || 0) + (CI.common || 0), fee = rv * pctFee, util = (CI.util || 0) + (CI.net || 0), pay = rv * (pctPay + pctDeli);
+      var other = (CI.supplies || 0) + (CI.repair || 0) + (CI.insure || 0) + (CI.deprec || 0) + (CI.other || 0) + exFix + rv * pctEx, lab = labor + (CI.commute || 0);
+      var pr = rv - cg - lab - rent - fee - util - pay - other;
+      return { rev: rv, cogs: cg, labor: lab, rent: rent, fee: fee, util: util, pay: pay, other: other, profit: pr };
+    }
+    var A = calc(X.rev, cur ? laborM * (X.rev && revF ? X.rev / revF : 0) : laborM), F = cur ? calc(revF, laborM) : null;
+    var varRate = (cogsRate || 0) + pctFee + pctPay + pctDeli + pctEx, fixedM = fix + exFix + laborM;
+    var be = varRate < 0.95 ? fixedM / (1 - varRate) : null, openDays = Math.max(1, X.rows.filter(function(x){ return x.rev; }).length + fcDays.length);
+    var keys = [["cRev", "rev"], ["cCogs", "cogs"], ["cLabor", "labor"], ["cRent", "rent"], ["cFee", "fee"], ["cUtil", "util"], ["cPay", "pay"], ["cOther", "other"]];
+    var base = F || A;
+    var tb = '<table class="or-t or-pl"><thead><tr><th></th><th>' + escapeHTML(orT("plAct")) + (cur ? ' <small>(〜' + today + ')</small>' : '') + '</th>' + (F ? '<th>' + escapeHTML(orT("plFc")) + '</th>' : '') + '<th>' + escapeHTML(orT("plShare")) + '</th></tr></thead><tbody>' +
+      keys.map(function(k, i){ var na = k[1] === "cogs" && cogsRate == null, cell = function(V){ return na ? '<td class="or-na">—</td>' : '<td>' + (i ? '−' : '') + orYen(V[k[1]]) + '</td>'; };
+        return '<tr' + (i === 0 ? ' class="or-plrev"' : '') + '><td>' + escapeHTML(orT(k[0])) + '</td>' + cell(A) + (F ? cell(F) : '') + '<td>' + (i && !na ? orPct(base[k[1]], base.rev) : '') + '</td></tr>'; }).join("") +
+      '</tbody><tfoot><tr><td>' + escapeHTML(orT("cProfit")) + (cogsRate == null ? ' *' : '') + '</td><td class="' + (A.profit < 0 ? 'neg' : '') + '">' + orYen(A.profit) + '</td>' + (F ? '<td class="' + (F.profit < 0 ? 'neg' : '') + '">' + orYen(F.profit) + '</td>' : '') + '<td>' + orPct(base.profit, base.rev) + '</td></tr></tfoot></table>';
+    var tiles = '<div class="or-k">' +
+      '<div><span>' + escapeHTML(orT("be")) + '</span><b>' + (be ? orYen(be) : "—") + '</b><small>' + (be ? escapeHTML(orT("beDay")) + ' ' + orYen(be / openDays) : '') + '</small></div>' +
+      '<div><span>' + escapeHTML(orT("fl")) + ' / ' + escapeHTML(orT("flr")) + '</span><b>' + orPct(base.cogs + base.labor, base.rev) + '</b><small>FLR ' + orPct(base.cogs + base.labor + base.rent, base.rev) + '</small></div>' +
+      '<div><span>' + escapeHTML(CS.target ? orT("tgtGap") : orT("cMargin")) + '</span><b>' + (CS.target ? (base.profit - CS.target >= 0 ? "+" : "−") + orYen(Math.abs(base.profit - CS.target)) : orPct(base.profit, base.rev)) + '</b><small>' + (CS.target ? escapeHTML(orT("tgtP")) + ' ' + orYen(CS.target) : '') + '</small></div></div>';
+    // thanh tiến độ: thực tế · dự báo · mức hòa vốn
+    var mx = Math.max(X.rev, revF, be || 0, 1), prog = '<div class="or-prog"><div class="or-pt"><i class="pa" style="width:' + (X.rev / mx * 100).toFixed(1) + '%"></i>' + (F ? '<i class="pf" style="width:' + (revF / mx * 100).toFixed(1) + '%"></i>' : '') +
+      (be ? '<b style="left:' + (be / mx * 100).toFixed(1) + '%"></b>' : '') + '</div><div class="or-leg"><i style="background:#16884D"></i>' + escapeHTML(orT("plAct")) + ' ' + orYen(X.rev) +
+      (F ? '<i style="background:#A7D7B8"></i>' + escapeHTML(orT("progFc")) + ' ' + orYen(revF) : '') + (be ? '<i style="background:#B91C1C;width:2px"></i>' + escapeHTML(orT("progBe")) + ' ' + orYen(be) : '') + '</div></div>';
+    var missK = [["rent", "cRent"], ["royalty", "cFee"], ["util", "cUtil"], ["card", "cPay"]].filter(function(q){ return !CI[q[0]]; }).map(function(q){ return orT(q[1]); });
+    var notes = [];
+    if (missK.length) notes.push(orT("miss", { x: missK.join(" · ") }));
+    if (cogsRate == null) notes.unshift(orT("noCogs0"));
+    else if (X.cogsAct === null) notes.push(orT("noCogs"));
+    if (F) notes.push(orT("fcNote", { n: fcDays.length, w: wxUsed ? orT("fcWx") : "" }));
+    var html = '<div class="or-s"><h2>' + escapeHTML(orT("pl")) + '</h2>' + tiles + '</div><div class="or-s"><h2>' + escapeHTML(orT("prog")) + '</h2>' + prog + '</div><div class="or-s">' + tb + '</div>' +
+      (notes.length ? '<ul class="or-n">' + notes.map(function(x){ return '<li>' + escapeHTML(x) + '</li>'; }).join("") + '</ul>' : '');
+    return { html: html, cogsRate: cogsRate, fix: fix + exFix, pctAll: pctFee + pctPay + pctDeli + pctEx, social: (CI.social || 0) / 100, commute: CI.commute || 0, wage: X.wage, F: F, A: A, be: be };
+  }
+  /** Trang "Từ lúc mở tiệm": biểu đồ doanh thu từng tháng + bảng (lợi nhuận ước theo chi phí hiện tại). */
+  function orHistHTML(H, R, PL){
+    H = (H || []).filter(function(x){ return x && (x.rev || x.h); });
+    if (H.length < 2) return "";
+    var L = orLang(), rows = H.map(function(x){
+      var lab = PL.wage * x.h * (1 + PL.social) + PL.commute, cg = PL.cogsRate != null ? x.rev * PL.cogsRate : 0;
+      var pr = x.rev - cg - lab - PL.fix - x.rev * PL.pctAll;
+      var curM = String(R.today || "").slice(0, 7) === x.ym && PL.F;
+      if (curM) return { ym: x.ym, rev: PL.F.rev, days: x.days, cust: x.cust, h: x.h, pr: PL.F.profit, fc: 1, act: x.rev };     // tháng đang chạy: số dự báo cuối tháng
+      return { ym: x.ym, rev: x.rev, days: x.days, cust: x.cust, h: x.h, pr: x.rev ? pr : null };
+    });
+    var show = rows.slice(-24), tot = rows.reduce(function(a, x){ return { rev: a.rev + (x.fc ? x.act : x.rev), pr: a.pr + (x.fc ? 0 : (x.pr || 0)), cust: a.cust + x.cust }; }, { rev: 0, pr: 0, cust: 0 });
+    var chart = orBars(show.map(function(x){ return { x: x.ym.slice(2).replace("-", "/"), v: x.fc ? x.act : x.rev, v2: x.fc ? Math.max(0, x.rev - x.act) : 0, c: "#16884D", c2: "#A7D7B8" }; }), { h: 140, maxW: 46 }) +
+      (show.some(function(x){ return x.fc; }) ? '<div class="or-leg"><i style="background:#16884D"></i>' + escapeHTML(orT("plAct")) + '<i style="background:#A7D7B8"></i>' + escapeHTML(orT("plFc")) + '</div>' : '');
+    var tb = '<table class="or-t"><thead><tr><th>' + escapeHTML(orT("hMonth")) + '</th><th>' + escapeHTML(orT("hRev")) + '</th><th>' + escapeHTML(orT("hDay")) + '</th><th>' + escapeHTML(orT("hCust")) + '</th><th>' + escapeHTML(orT("hMh")) + '</th><th>' + escapeHTML(orT("hProfit")) + '</th></tr></thead><tbody>' +
+      show.slice().reverse().slice(0, 18).map(function(x){ return '<tr' + (x.fc ? ' class="or-fc"' : '') + '><td>' + x.ym.replace("-", "/") + (x.fc ? ' <small>(' + escapeHTML(orT("progFc")) + ')</small>' : '') + '</td><td>' + (x.rev ? orYen(x.rev) : "—") + '</td><td>' + (x.days ? orYen((x.fc ? x.act : x.rev) / x.days) : "—") + '</td><td>' + (x.cust ? x.cust.toLocaleString() : "—") + '</td><td>' + (x.h && x.rev ? orYen(x.rev / x.h) : "—") + '</td><td class="' + (x.pr < 0 ? 'neg' : '') + '">' + (x.pr != null ? orYen(x.pr) : "—") + '</td></tr>'; }).join("") +
+      '</tbody><tfoot><tr><td>' + escapeHTML(orT("hTotal")) + '</td><td>' + orYen(tot.rev) + '</td><td></td><td>' + (tot.cust ? tot.cust.toLocaleString() : "") + '</td><td></td><td class="' + (tot.pr < 0 ? 'neg' : '') + '">' + orYen(tot.pr) + '</td></tr></tfoot></table>';
+    return '<div class="or-s"><h2>' + escapeHTML(orT("hist")) + ' <small class="or-sub">' + escapeHTML(orT("histSince", { m: rows[0].ym.replace("-", "/") })) + '</small></h2>' + chart + '</div><div class="or-s">' + tb + '<div class="or-leg">' + escapeHTML(orT("hNote")) + '</div></div>';
   }
 
   // ---- v57: TRANG CHỦ QUÁN (mở bằng link ?or=…, không đăng nhập, chỉ xem) ----
@@ -327,7 +462,7 @@
     if (!lsGet("sbw.orlang")){ var nl = String(navigator.language || "ja").toLowerCase(); lsSet("sbw.orlang", /^vi/.test(nl) ? "vi" : /^en/.test(nl) ? "en" : "ja"); }
     if (!OR.r || ym){
       app.innerHTML = '<div class="orv"><div class="orv-msg">' + escapeHTML(orT("loading")) + '</div></div>';
-      try { var v = await gsRun("ownerView", OR.key, ym || OR.ym || ""); OR.r = v.r; OR.d = v.d; OR.ym = v.ym; OR.months = v.months || [v.ym]; OR.err = ""; }
+      try { var v = await gsRun("ownerView", OR.key, ym || OR.ym || ""); OR.r = v.r; OR.r.hist = v.hist || []; OR.d = v.d; OR.ym = v.ym; OR.months = v.months || [v.ym]; OR.err = ""; }
       catch (e){ OR.err = (e && e.message) || "x"; }
     }
     orvPaint();

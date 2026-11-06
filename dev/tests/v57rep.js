@@ -106,7 +106,7 @@ const W = (p, ms) => p.waitForTimeout(ms);
     ok(nm + ': nút trong ô không tràn / không cắt chữ', !ov, ov);
     await m.locator('#orBox').screenshot({ path: path.join(SHOT, nm + '-ticket.png') });
     await m.click('[data-orep="open"]'); await W(m, 3500);
-    ok(nm + ': mở báo cáo 3 trang', await m.locator('.doc-prev .or-a4').count() === 3);
+    ok(nm + ': mở báo cáo ≥4 trang', await m.locator('.doc-prev .or-a4').count() >= 4);
     const lay = await m.evaluate(() => { const mo = document.querySelector('.doc-modal .modal, .doc-modal [role=dialog], .doc-modal > div'); const r = (mo || document.body).getBoundingClientRect();
       const pages = [...document.querySelectorAll('.doc-prev .or-a4')].map(pg => ({ sh: pg.scrollHeight, ch: pg.clientHeight, w: pg.scrollWidth, cw: pg.clientWidth }));
       scrollTo(200, scrollY); const sx = scrollX; scrollTo(0, scrollY); return { left: r.left, right: r.right, vw: innerWidth, docW: sx ? document.documentElement.scrollWidth : innerWidth, pages }; });
@@ -129,7 +129,7 @@ const W = (p, ms) => p.waitForTimeout(ms);
   const key = A.ownerLink(t, '').key;
   for (const [nm, vp] of [['phone', { width: 390, height: 844 }], ['pc', { width: 1360, height: 900 }]]){
     const o = await open(vp, { owner: true, lang: 'ja', prm: { or: key } }); await W(o, 2500);
-    ok(nm + ': trang chủ quán hiện báo cáo (không cần đăng nhập)', await o.locator('.or-view .or-a4').count() === 3, await o.evaluate(() => document.body.innerText.slice(0, 200)));
+    ok(nm + ': trang chủ quán hiện báo cáo (không cần đăng nhập)', await o.locator('.or-view .or-a4').count() >= 4, await o.evaluate(() => document.body.innerText.slice(0, 200)));
     ok(nm + ': không hiện màn đăng nhập', !(await o.locator('#mgrPwd').count()));
     const sel = await o.locator('#orvMonth option').count();
     ok(nm + ': chọn được tháng', sel >= 2);

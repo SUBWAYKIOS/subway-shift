@@ -39,6 +39,9 @@ def once(old, new, label):
     global h
     if new in h:
         return
+    added = [l for l in new.split('\n') if l.strip() and l not in old.split('\n')]
+    if h.count(old) == 0 and added and all(l in h for l in added):
+        return                      # đã ghép từ lần trước (về sau có móc khác chen vào giữa)
     assert h.count(old) == 1, 'không thấy: ' + label
     h = h.replace(old, new)
 
@@ -70,8 +73,16 @@ once('    pushSync(); pushMaybeInvite();               // v45: thông báo đẩ
 once('      html += mgrpHeadHTML("sales") + [monthBudgetHTML(), bizTicketHTML(),',
      '      html += mgrpHeadHTML("sales") + [monthBudgetHTML(), ownerTicketHTML(), bizTicketHTML(),', 'ownerTicket')
 
+# v58: thời tiết — thanh trên tab Hôm nay (nhân viên) / Ngày (quản lý) + vẽ lại sau mỗi lần dựng màn
+once('      html += staffChangesHTML(me);\n      var fd, jobsH;',
+     '      html += staffChangesHTML(me);\n      html += wxStripHTML();            // v58 🌤\n      var fd, jobsH;', 'wxStaff')
+once("""        '<div class="pin-row-slot">' + pinRowHTML() + '</div>';\n      // Bàn làm việc""",
+     """        wxStripHTML() + '<div class="pin-row-slot">' + pinRowHTML() + '</div>';\n      // Bàn làm việc""", 'wxMgr')
+once('    officeAfterRender(tab === "office");\n', '    officeAfterRender(tab === "office");\n    wxAfterRender();\n', 'wxAfterStaff')
+once('    officeAfterRender(state.mgrTab === "office");\n', '    officeAfterRender(state.mgrTab === "office");\n    wxAfterRender();\n', 'wxAfterMgr')
+
 # 5) phiên bản
-h = re.sub(r'var APP_VERSION = "[0-9.]+";', 'var APP_VERSION = "2026.11.06.1";', h, count=1)
-h = re.sub(r'var SRV_NEED = "[0-9.]+";', 'var SRV_NEED = "2026.11.06.1";', h, count=1)
+h = re.sub(r'var APP_VERSION = "[0-9.]+";', 'var APP_VERSION = "2026.11.06.2";', h, count=1)
+h = re.sub(r'var SRV_NEED = "[0-9.]+";', 'var SRV_NEED = "2026.11.06.2";', h, count=1)
 open(src, 'w', encoding='utf8').write(h)
 print('ok', len(js), 'js chars,', len(css), 'css chars')

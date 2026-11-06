@@ -353,6 +353,52 @@ async function run(force){
   if (all.length) await sendFiles(all); else log('Không có file CSV nào để gửi.');
 }
 
+/** Lấy lùi dữ liệu tháng cũ: chạy các báo cáo tháng (時間帯別…) cho từng tháng từ <from> tới tháng trước, gửi từng tháng một. */
+async function backfill(from){
+  const mm = String(from || '').match(/^(\d{4})-?(\d{1,2})$/);
+  if (!mm){ log('❌ Cần tháng bắt đầu dạng 2024-04'); return; }
+  let rec; try { rec = JSON.parse(fs.readFileSync(REC_F, 'utf8')); } catch (e){ rec = null; }
+  if (!rec || !rec.recipes || !rec.recipes.length){ log('❌ Bot chưa học đường bấm — chạy Hoc-lai-duong-bam.command trước.'); return; }
+  let mon = {}; try { mon = JSON.parse(fs.readFileSync(MON_F, 'utf8')); } catch (e){}
+  const list = rec.recipes.map((r, ri) => { const label = r.label || labelOf(r.steps, r.name); return { r, label, name: fileFor(ri + 1, label), kind: kindOf(r, label) }; }).filter(x => x.kind === 'thang');
+  if (!list.length){ log('❌ Không có báo cáo tháng (時間帯別…) trong đường bấm đã học.'); return; }
+  const end = prevMonth(new Date()), months = [];
+  for (let y = +mm[1], m = +mm[2]; (y < end.y || (y === end.y && m <= end.m)) && months.length < 60; m === 12 ? (y++, m = 1) : m++) months.push({ y, m, k: y + '-' + String(m).padStart(2, '0') });
+  const todo = months.filter(x => process.env.WA_REDO === '1' || !mon[x.k]);
+  log('⏪ Lấy lùi ' + todo.length + ' tháng (' + (todo[0] ? todo[0].k : '—') + ' → ' + end.y + '-' + String(end.m).padStart(2, '0') + '), bỏ qua ' + (months.length - todo.length) + ' tháng đã có');
+  if (!todo.length) return;
+  fs.mkdirSync(DIAG, { recursive: true });
+  const ctx = await browser(true), page = ctx.pages()[0] || await ctx.newPage();
+  let okM = 0;
+  try {
+    if (!(await login(page))) throw new Error('Đăng nhập WingArc không được (sai mật khẩu?)');
+    log('🔐 Đã đăng nhập WingArc');
+    for (const P of todo){
+      const got = []; let ok = 0;
+      for (const { r, label, name } of list){
+        try {
+          for (const extra of ctx.pages().slice(1)) await extra.close().catch(() => {});
+          if (!(await login(page))) throw new Error('mất đăng nhập');       // login() tự mở lại trang đầu
+          const last = r.steps.length - 1;
+          for (let i = 0; i < last; i++){
+            if (/集計実行/.test(r.steps[i].text || '')){ const fr = await frameFor(page, r.steps[i].frame); const how = await setPeriod(fr, P.y, P.m); log('   🗓 ' + P.k + ' ' + label + ': ' + (how || 'không thấy ô chọn kỳ')); await page.waitForTimeout(800); }
+            await replay(page, r.steps[i]);
+          }
+          const [dl] = await Promise.all([waitDownload(ctx, 120000), replay(page, r.steps[last])]);
+          const to = path.join(DROP, name.replace(/\.csv$/, '@' + P.k.replace('-', '') + '.csv')); await dl.saveAs(to);
+          const rg = rangeOf(to), want = [P.k.replace('-', '') + '01', P.k.replace('-', '') + String(new Date(P.y, P.m, 0).getDate())];
+          if (rg && (rg[0] !== want[0] || rg[1] !== want[1])){ log('⚠️ ' + label + ': dữ liệu ' + rg.join('–') + ' không phải tháng ' + P.k + ' → bỏ'); fs.renameSync(to, path.join(DIAG, 'sai-ky_' + path.basename(to))); continue; }
+          got.push(to); ok++; log('📥 ' + P.k + ' ' + label + (rg ? ' (' + rg.join('–') + ')' : ''));
+        } catch (e){ log('⚠️ ' + P.k + ' ' + label + ': ' + e.message); }
+      }
+      if (got.length && await sendFiles(got).catch(e => (log('⚠️ gửi ' + P.k + ': ' + e.message), false)) && ok === list.length){ mon[P.k] = Date.now(); fs.writeFileSync(MON_F, JSON.stringify(mon, null, 1)); okM++; }
+      await page.waitForTimeout(1500);
+    }
+  } catch (e){ log('⚠️ ' + e.message); }
+  await ctx.close();
+  log('⏪ Xong lấy lùi: đủ ' + okM + '/' + todo.length + ' tháng' + (okM < todo.length ? ' — chạy lại lệnh này để bù tháng còn thiếu (tháng đã có sẽ tự bỏ qua)' : ''));
+}
+
 const mode = process.argv[2] || 'chay';
-(mode === 'hoc' ? learn() : (mode === 'gui' ? sendFiles(fs.readdirSync(DROP).filter(n => /\.(csv|txt|tsv)$/i.test(n)).map(n => path.join(DROP, n))) : run(mode)))
+(mode === 'hoc' ? learn() : mode === 'lui' ? backfill(process.argv[3]) : (mode === 'gui' ? sendFiles(fs.readdirSync(DROP).filter(n => /\.(csv|txt|tsv)$/i.test(n)).map(n => path.join(DROP, n))) : run(mode)))
   .then(() => process.exit(0), e => { log('❌ ' + (e && e.message || e)); process.exit(1); });
