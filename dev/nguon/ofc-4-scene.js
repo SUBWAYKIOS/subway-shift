@@ -163,7 +163,7 @@
   function ofcFrame(){
     var sc = OFC.sc; if (!sc || !sc.R) return;
     sc.raf = 0;
-    if (!document.body.contains(sc.canvas) || document.hidden || sc.lost) return;
+    if (!document.body.contains(sc.canvas) || document.hidden || sc.lost || OFC.gameOn) return;   // đang chơi trò chơi: dừng vẽ (ofcLoop() chạy lại khi đóng)
     if (!sc.L || !sc.cam){ sc.raf = requestAnimationFrame(ofcFrame); return; }
     var now = performance.now(), dt = Math.min(0.1, (now - sc.last) / 1000), t = (now - sc.t0) / 1000; sc.last = now;
     var host = sc.canvas.parentNode, w = host.clientWidth, h = host.clientHeight;

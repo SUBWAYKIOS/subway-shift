@@ -29,11 +29,13 @@
     ov.innerHTML = '<div class="ofc-gtop"><b>' + g[1] + ' ' + escapeHTML(ot(g[2])) + '</b><span class="ofc-ghud" id="gHud"></span><button type="button" class="ofc-gx" aria-label="×">×</button></div><div class="ofc-gbody" id="gBody"></div>';
     document.body.appendChild(ov);
     var alive = true, cleanup = [];
-    function close(){ alive = false; cleanup.forEach(function(f){ try { f(); } catch (e){} }); ov.remove(); }
+    OFC.gameOn = true;                                     // quán 3D phía sau tạm dừng vẽ → trò chơi mượt trên điện thoại
+    function close(){ alive = false; cleanup.forEach(function(f){ try { f(); } catch (e){} }); ov.remove(); OFC.gameOn = false; try { ofcLoop(); } catch (e){} }
     ov.querySelector(".ofc-gx").addEventListener("click", close);
     var body = ov.querySelector("#gBody"), hud = ov.querySelector("#gHud");
     function finish(score){
-      if (!alive) return;
+      if (!alive || api.over) return;
+      api.over = true;                                      // v59: hết ván — không vẽ đè (vd đơn bánh xong đúng lúc hết giờ)
       cleanup.forEach(function(f){ try { f(); } catch (e){} }); cleanup = [];
       body.innerHTML = '<div class="ofc-gend"><div class="ofc-gsc">' + escapeHTML(ot("score")) + '<b>' + score + '</b></div><div id="gRank" class="ofc-gload">…</div>' +
         '<div class="ofc-gacts"><button type="button" class="btn" id="gAgain">' + escapeHTML(ot("again")) + '</button><button type="button" class="btn ghost" id="gClose">' + escapeHTML(ot("close")) + '</button></div></div>';
@@ -45,7 +47,7 @@
         var el = body.querySelector("#gRank"); if (el) el.innerHTML = '<div class="ofc-gbest">' + escapeHTML(ot("best", { n: r.best })) + '</div><h5>' + escapeHTML(ot("top")) + '</h5>' + ofcTopHTML(r.top);
       }, function(e){ var el = body.querySelector("#gRank"); if (el) el.textContent = (e && e.message) || ""; });
     }
-    var api = { body: body, hud: hud, alive: function(){ return alive; }, finish: finish, on: function(f){ cleanup.push(f); } };
+    var api = { body: body, hud: hud, over: false, alive: function(){ return alive && !api.over; }, finish: finish, on: function(f){ cleanup.push(f); } };
     if (kind === "bake") ofcGameBake(api); else if (kind === "catch") ofcGameCatch(api); else ofcGameMemo(api);
   }
 
@@ -53,6 +55,7 @@
   function ofcGameBake(G){
     var score = 0, left = 60, order = [], pos = 0, streak = 0, t0 = Date.now();
     function newOrder(){
+      if (!G.alive()) return;
       var n = 3 + Math.min(3, Math.floor(score / 80)), pool = OFC_ING.slice(1).sort(function(){ return Math.random() - 0.5; });
       order = [OFC_ING[0]].concat(pool.slice(0, n)); pos = 0; draw();
     }
@@ -76,45 +79,66 @@
     newOrder(); hud();
   }
 
-  /** 🧺 Hứng nguyên liệu: kéo khay, tránh rác (canvas). */
+  /** 🧺 Hứng nguyên liệu: kéo khay, tránh rác (canvas).
+   *  v59: emoji vẽ sẵn thành ảnh (Safari vẽ emoji mỗi khung rất chậm → giật), bắt va chạm theo quãng rơi (máy chậm không còn "xuyên khay"),
+   *  khay cao hơn vạch Home của iPhone, kéo được ở bất kỳ đâu trên màn chơi, có nhắc cách chơi lúc đầu, quán 3D phía sau tạm dừng vẽ. */
   function ofcGameCatch(G){
     var cv = document.createElement("canvas"); cv.className = "gc-cv"; G.body.appendChild(cv);
-    var x = cv.getContext("2d"), W = 0, H = 0, dpr = Math.min(2, window.devicePixelRatio || 1);
-    function fit(){ W = G.body.clientWidth; H = G.body.clientHeight; cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + "px"; cv.style.height = H + "px"; x.setTransform(dpr, 0, 0, dpr, 0, 0); }
+    var x = cv.getContext("2d"), W = 0, H = 0, dpr = Math.min(2, window.devicePixelRatio || 1), bg = null, TY = 0;
+    var SPR = {}, SZ = 40;
+    function sprite(e){
+      if (SPR[e]) return SPR[e];
+      var c = document.createElement("canvas"), n = Math.round(SZ * 1.3 * dpr); c.width = c.height = n;
+      var g = c.getContext("2d"); g.textAlign = "center"; g.textBaseline = "middle"; g.font = Math.round(SZ * dpr) + "px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui"; g.fillText(e, n / 2, n / 2 + n * 0.04);
+      return (SPR[e] = c);
+    }
+    function fit(){
+      W = G.body.clientWidth; H = G.body.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + "px"; cv.style.height = H + "px"; x.setTransform(dpr, 0, 0, dpr, 0, 0);
+      bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#FFF8E8"); bg.addColorStop(1, "#E9F5EC");
+      TY = H - Math.max(72, Math.min(120, H * 0.13));            // khay cách đáy đủ xa: ngón cái không chạm vạch Home
+      tray = Math.max(56, Math.min(W - 56, tray || W / 2)); goal = tray;
+    }
+    var tray = 0, goal = 0;
     fit(); window.addEventListener("resize", fit); G.on(function(){ window.removeEventListener("resize", fit); });
-    var tray = W / 2, items = [], score = 0, lives = 3, last = performance.now(), spawn = 0, t = 0, pops = [], raf = 0, combo = 0;
-    var BAD = ["🗑️", "🧦", "👟"];
-    function move(ev){ var r = cv.getBoundingClientRect(); tray = Math.max(40, Math.min(W - 40, (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left)); }
-    cv.addEventListener("pointermove", move); cv.addEventListener("pointerdown", move);
+    var BAD = ["🗑️", "🧦", "👟"], items = [], score = 0, lives = 3, last = performance.now(), spawn = 0.6, t = 0, pops = [], raf = 0, combo = 0, hudTxt = "", touched = false;
+    BAD.concat(OFC_ING.map(function(o){ return o[1]; })).forEach(sprite);
+    function move(ev){ var r = cv.getBoundingClientRect(); goal = Math.max(56, Math.min(W - 56, ev.clientX - r.left)); touched = true; }
+    cv.addEventListener("pointerdown", function(ev){ try { cv.setPointerCapture(ev.pointerId); } catch (e){} move(ev); });
+    cv.addEventListener("pointermove", move);
     function loop(now){
       if (!G.alive()) return;
-      var dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt; spawn -= dt;
-      var speed = 140 + t * 6;
-      if (spawn <= 0){ spawn = Math.max(0.35, 0.9 - t * 0.01); var bad = Math.random() < 0.22;
-        items.push({ x: 20 + Math.random() * (W - 40), y: -20, e: bad ? BAD[Math.floor(Math.random() * 3)] : OFC_ING[Math.floor(Math.random() * OFC_ING.length)][1], bad: bad, v: speed * (0.8 + Math.random() * 0.5), r: Math.random() * 6 }); }
-      x.clearRect(0, 0, W, H);
-      var gr = x.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, "#FFF8E8"); gr.addColorStop(1, "#E9F5EC"); x.fillStyle = gr; x.fillRect(0, 0, W, H);
-      var ty = H - 46;
-      items.forEach(function(it){ it.y += it.v * dt; it.r += dt * 2; });
+      var dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now; t += dt; spawn -= dt;
+      tray += (goal - tray) * Math.min(1, dt * 28);                 // theo tay mượt, không trễ
+      var speed = 150 + t * 6;
+      if (spawn <= 0){ spawn = Math.max(0.38, 0.9 - t * 0.01); var bad = Math.random() < 0.22;
+        items.push({ x: 24 + Math.random() * (W - 48), y: -24, py: -24, e: bad ? BAD[Math.floor(Math.random() * 3)] : OFC_ING[Math.floor(Math.random() * OFC_ING.length)][1], bad: bad, v: speed * (0.8 + Math.random() * 0.45), r: Math.random() * 6 }); }
+      x.fillStyle = bg; x.fillRect(0, 0, W, H);
+      items.forEach(function(it){ it.py = it.y; it.y += it.v * dt; it.r += dt * 2; });
       items = items.filter(function(it){
-        if (it.y > ty - 10 && it.y < ty + 20 && Math.abs(it.x - tray) < 56){
-          if (it.bad){ lives--; combo = 0; pops.push({ x: it.x, y: ty - 20, s: "💥", t: 0 }); if (navigator.vibrate) try { navigator.vibrate(60); } catch (e){} }
-          else { combo++; score += 10 + Math.min(20, combo * 2); pops.push({ x: it.x, y: ty - 20, s: "+" + (10 + Math.min(20, combo * 2)), t: 0 }); }
+        // đi qua mép trên khay trong khung này (kể cả khi máy chậm, bước rơi lớn)
+        if (it.py <= TY + 6 && it.y >= TY - 14 && Math.abs(it.x - tray) < 62){
+          if (it.bad){ lives--; combo = 0; pops.push({ x: it.x, y: TY - 24, s: "💥", t: 0 }); if (navigator.vibrate) try { navigator.vibrate(60); } catch (e){} }
+          else { combo++; var add = 10 + Math.min(20, combo * 2); score += add; pops.push({ x: it.x, y: TY - 24, s: "+" + add, t: 0 }); }
           return false;
         }
         if (it.y > H + 30){ if (!it.bad) combo = 0; return false; }
         return true;
       });
-      x.font = "34px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji'"; x.textAlign = "center"; x.textBaseline = "middle";
-      items.forEach(function(it){ x.save(); x.translate(it.x, it.y); x.rotate(Math.sin(it.r) * 0.3); x.fillText(it.e, 0, 0); x.restore(); });
-      x.fillStyle = "#145C39"; x.beginPath(); x.roundRect ? x.roundRect(tray - 56, ty, 112, 16, 8) : x.rect(tray - 56, ty, 112, 16); x.fill();
-      x.fillStyle = "#F2C200"; x.fillRect(tray - 50, ty + 4, 100, 3);
-      x.font = "700 18px system-ui"; pops = pops.filter(function(p){ p.t += dt; x.globalAlpha = Math.max(0, 1 - p.t); x.fillStyle = "#145C39"; x.fillText(p.s, p.x, p.y - p.t * 40); x.globalAlpha = 1; return p.t < 1; });
-      G.hud.textContent = ot("score") + " " + score + " · " + "❤️".repeat(Math.max(0, lives));
+      var half = SZ * 1.3 / 2;
+      items.forEach(function(it){ x.save(); x.translate(it.x, it.y); x.rotate(Math.sin(it.r) * 0.3); x.drawImage(SPR[it.e], -half, -half, half * 2, half * 2); x.restore(); });
+      x.fillStyle = "rgba(20,92,57,.12)"; x.fillRect(tray - 58, TY + 18, 116, 4);
+      x.fillStyle = "#145C39"; x.beginPath(); if (x.roundRect) x.roundRect(tray - 58, TY, 116, 16, 8); else x.rect(tray - 58, TY, 116, 16); x.fill();
+      x.fillStyle = "#F2C200"; x.fillRect(tray - 50, TY + 4, 100, 3);
+      x.textAlign = "center"; x.textBaseline = "middle"; x.font = "700 18px system-ui, sans-serif";
+      pops = pops.filter(function(p){ p.t += dt; x.globalAlpha = Math.max(0, 1 - p.t); if (p.s === "💥"){ var s = sprite("💥"); x.drawImage(s, p.x - 20, p.y - p.t * 40 - 20, 40, 40); } else { x.fillStyle = "#145C39"; x.fillText(p.s, p.x, p.y - p.t * 40); } x.globalAlpha = 1; return p.t < 1; });
+      if (!touched && t < 6){ x.globalAlpha = Math.min(1, (6 - t) / 1.5); x.fillStyle = "rgba(20,92,57,.75)"; x.font = "600 14px system-ui, sans-serif"; x.fillText("👆 " + ot("gCatchD"), W / 2, TY - 60); x.globalAlpha = 1; }
+      if (window.__gc) window.__gc = { items: items, TY: TY, W: W, tray: tray, score: score, lives: lives, t: t };   // chỉ dùng khi kiểm thử
+      var h = ot("score") + " " + score + " · " + "❤️".repeat(Math.max(0, lives)); if (h !== hudTxt){ G.hud.textContent = hudTxt = h; }
       if (lives <= 0 || t > 90){ G.finish(score); return; }
       raf = requestAnimationFrame(loop);
     }
-    raf = requestAnimationFrame(loop);
+    sprite("💥");
+    raf = requestAnimationFrame(function(n){ last = n; loop(n); });
     G.on(function(){ cancelAnimationFrame(raf); });
   }
 

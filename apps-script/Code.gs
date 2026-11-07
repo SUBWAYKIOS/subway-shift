@@ -523,7 +523,7 @@ function throttle_(bucket) {
 /** Client gọi đầu tiên khi mở app. Không cần token — chỉ trả danh sách tên
  *  và trạng thái "đã đặt mã PIN hay chưa", không trả bất kỳ mã nào. */
 // Phải trùng với APP_VERSION trong Index.html — lệch là app báo "dán lại cả hai file".
-var APP_VERSION = '2026.11.06.3';
+var APP_VERSION = '2026.11.07.1';
 
 function bootstrap(dk, ym, mdk) {
   var t0 = Date.now();

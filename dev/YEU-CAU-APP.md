@@ -1,3 +1,10 @@
+## v2026.11.07.1 — 🧺 sửa trò "Hứng nguyên liệu" trên iPhone
+- Mượt hơn: emoji được vẽ sẵn thành ảnh một lần (Safari vẽ emoji từng khung rất chậm → giật); quán 3D phía sau tạm dừng vẽ khi đang chơi, đóng trò chơi thì chạy lại.
+- Hứng chắc tay: bắt va chạm theo cả quãng rơi trong khung hình — máy chậm không còn chuyện món "xuyên qua" khay.
+- Khay nằm cao hơn (≥ 72px cách đáy) để ngón cái không chạm vạch Home / cử chỉ thoát app; kéo ở đâu trên màn chơi cũng được, khay theo tay mượt; màn chơi chừa vùng an toàn đáy iPhone.
+- Có nhắc cách chơi lúc đầu (tự ẩn khi bắt đầu kéo). Hết ván không còn bị vẽ đè (trò Làm bánh: đơn xong đúng lúc hết giờ).
+- Kiểm thử mới `tests/v59game.js`: chơi thử cả 3 trò trên điện thoại + máy tính, giả máy chậm 20 khung/giây.
+
 ## v2026.11.06.3 — 🌤 thời tiết gọn: ô nhỏ ở góc thẻ ca thay cho thẻ to
 - Bỏ thẻ thời tiết to trên tab Hôm nay / tab Ngày. Thay bằng **ô nhỏ** ở góc phải thẻ ca (nhân viên) và trong hàng chip của ngày (quản lý): biểu tượng + nhiệt độ + cao/thấp + % mưa (khi ≥ 30%); chấm vàng = có lời nhắc.
 - Ô đi theo ngày đang xem (‹ › hoặc chọn ngày trên lịch): hôm nay = trời lúc này, 6 ngày tới = dự báo, ngoài khoảng thì ẩn.
